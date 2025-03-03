@@ -1,5 +1,7 @@
 # TIFC - Infinite canvas for your terminal
 
+<div style="text-align:center"><img src="./logo.svg" width="80%"/></div>
+
 ![version](https://img.shields.io/github/v/tag/evjeesm/tifc)
 
 > 🚧 Warning
