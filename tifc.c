@@ -41,51 +41,53 @@ void tifc_create_ui_layout(tifc_t *const tifc)
             .size_method = LAYOUT_SIZE_RELATIVE,
             .size = {.y = 50},
         },
-        .columns = 4,
+        .columns = 1,
         .column_layout = (grid_layout_t[]){
-            [0] = {.size = 3},
-            [1] = {.size = 50, .size_method = LAYOUT_SIZE_RELATIVE },
-            [2] = {.size = 50, .size_method = LAYOUT_SIZE_RELATIVE },
-            [3] = {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE },
+            {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
         },
-        .rows = 3,
+        .rows = 10,
         .row_layout = (grid_layout_t[]){
-            [0] = {.size = 3},
-            [1] = {.size = 35, .size_method = LAYOUT_SIZE_RELATIVE },
-            [2] = {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE },
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
+            {.size = 3},
         },
-        .areas = 12,
+        .areas = 10,
         .areas_layout = (grid_area_opts_t[]){
-            [0]  = {{0, 0}, {0, 0}, TEXT_ALIGN_LEFT},
-            [1]  = {{1, 1}, {0, 0}, TEXT_ALIGN_LEFT},
-            [2]  = {{2, 2}, {0, 0}, TEXT_ALIGN_LEFT},
-            [3]  = {{3, 3}, {0, 0}, TEXT_ALIGN_LEFT},
-            [4]  = {{0, 0}, {1, 1}, TEXT_ALIGN_LEFT},
-            [5]  = {{1, 1}, {1, 1}, TEXT_ALIGN_LEFT},
-            [6]  = {{2, 2}, {1, 1}, TEXT_ALIGN_LEFT},
-            [7]  = {{3, 3}, {1, 1}, TEXT_ALIGN_LEFT},
-            [8]  = {{0, 0}, {2, 2}, TEXT_ALIGN_LEFT},
-            [9]  = {{1, 1}, {2, 2}, TEXT_ALIGN_LEFT},
-            [10] = {{2, 2}, {2, 2}, TEXT_ALIGN_LEFT},
-            [11] = {{3, 3}, {2, 2}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {0, 0}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {1, 1}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {2, 2}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {3, 3}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {4, 4}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {5, 5}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {6, 6}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {7, 7}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {8, 8}, TEXT_ALIGN_LEFT},
+            {{0, 0}, {9, 9}, TEXT_ALIGN_LEFT},
         }
     };
     (void) ui_add_panel(&tifc->ui, opts);
 
-    opts->title = "left";
-    opts->layout.align = LAYOUT_ALIGN_LEFT;
-    opts->layout.size.x = 50;
-    (void) ui_add_panel(&tifc->ui, opts);
-
-    opts->title = "right-top";
-    opts->layout.align = LAYOUT_ALIGN_TOP;
-    opts->layout.size.y = 50;
-    (void) ui_add_panel(&tifc->ui, opts);
-
-    opts->title = "right-bot";
-    opts->layout.align = LAYOUT_ALIGN_BOT;
-    opts->layout.size.y = 100;
-    (void) ui_add_panel(&tifc->ui, opts);
+    // opts->title = "left";
+    // opts->layout.align = LAYOUT_ALIGN_LEFT;
+    // opts->layout.size.x = 50;
+    // (void) ui_add_panel(&tifc->ui, opts);
+    //
+    // opts->title = "right-top";
+    // opts->layout.align = LAYOUT_ALIGN_TOP;
+    // opts->layout.size.y = 50;
+    // (void) ui_add_panel(&tifc->ui, opts);
+    //
+    // opts->title = "right-bot";
+    // opts->layout.align = LAYOUT_ALIGN_BOT;
+    // opts->layout.size.y = 100;
+    // (void) ui_add_panel(&tifc->ui, opts);
 
     ui_recalculate_layout(&tifc->ui, &tifc->display);
 }

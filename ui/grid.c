@@ -175,6 +175,7 @@ void calculate_spans(
         {
             *span = INVALID_SPAN;
             S_LOG(LOGGER_DEBUG, "Invalid Span %d = {%u, %u}\n", i, span->start, span->end);
+            ++span;
             continue;
         }
 
