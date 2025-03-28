@@ -17,6 +17,7 @@ static void on_drag_begin(const mouse_event_t *const, void *const);
 static void on_drag(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_scroll(const mouse_event_t *const, void *const);
+static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos);
 
 static input_hooks_t hooks_init(void)
 {
@@ -102,11 +103,32 @@ panel_t *ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
     return panel;
 }
 
+static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos)
+{
+    const size_t size = sparse_size(ui->panels);
+    for (size_t i = 0; i < size; ++i)
+    {
+        panel_t *panel = sparse_get(ui->panels, i);
+        if (pos.x >= panel->area.first.x && pos.x <= panel->area.second.x
+            && pos.y >= panel->area.first.y && pos.y <= panel->area.second.y)
+        {
+            return panel;
+        }
+    }
+    return NULL;
+}
+
+
 static void on_hover(const mouse_event_t *const hover, void *const param)
 {
-    (void) param;
+    ui_t *ui = param;
     printf(ROW(1) "UI::hover, at %u, %u\n",
         hover->position.x, hover->position.y);
+    /* zero based position */
+    disp_pos_t norm_pos = {hover->position.x - 1, hover->position.y - 1};
+    panel_t *panel = ui_get_hovered_panel(ui, norm_pos);
+    if (!panel) { return; }
+    panel_hover(panel, norm_pos);
 }
 
 static void on_press(const mouse_event_t *const press, void *const param)

@@ -26,6 +26,7 @@ void tifc_deinit(tifc_t *const tifc)
 {
     input_disable_mouse();
     input_deinit(&tifc->input);
+    ui_deinit(&tifc->ui);
 }
 
 
@@ -39,20 +40,27 @@ void tifc_render(tifc_t *const tifc)
 
 size_t g_array [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-void size_t_array_render(display_t *const display, const disp_area_t area, const void *const source, const size_t limit, const size_t index)
+void size_t_array_render(display_t *const display, const grid_area_t * const area, const void *const source, const size_t limit, const size_t index)
 {
     const size_t *source_ = source;
     char buf[18];
     size_t size = sprintf(buf, "%zu", source_[index]);
     border_set_t border = {._ = L"╭╮╯╰┆┄"};
-    display_draw_border(display, BORDER_STYLE_1, border, area);
+
     if (index < limit)
     {
-        display_draw_string_aligned(display, size, buf, area, (style_t){0}, LAYOUT_ALIGN_CENTER);
+        style_t style = BORDER_STYLE_1;
+        if (area->is_hovered)
+        {
+            style = (style_t){.seq=ESC"[37;100m"};
+            display_fill_area(display, style, area->area);
+        }
+        display_draw_border(display, style, border, area->area);
+        display_draw_string_aligned(display, size, buf, area->area, style, LAYOUT_ALIGN_CENTER);
     }
     else
     {
-        display_draw_string_centered(display, 13, "(unavailable)", area, (style_t){.seq=ESC"[31m"});
+        display_draw_string_centered(display, 13, "(unavailable)", area->area, (style_t){.seq=ESC"[31m"});
     }
 }
 
@@ -137,7 +145,7 @@ int tifc_event_loop(void)
         // input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 3});
         tifc_render(&tifc);
         input_hooks_t *hooks = &tifc.ui.hooks;
-        exit_status = input_handle_events(&tifc.input, hooks, &tifc);
+        exit_status = input_handle_events(&tifc.input, hooks, &tifc.ui);
         if (0 != exit_status)
         {
             display_erase();

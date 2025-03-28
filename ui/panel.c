@@ -154,6 +154,17 @@ void panel_render(const panel_t *panel,
 }
 
 
+void panel_hover(panel_t *const panel, const disp_pos_t pos)
+{
+    if (panel->content_type == PANEL_CONTENT_TYPE_RAW)
+    {
+        return;
+    }
+
+    grid_hover(&panel->content.grid, pos);
+}
+
+
 void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render)
 {
     assert(panel);

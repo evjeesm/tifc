@@ -73,8 +73,8 @@ void panel_render(const panel_t *panel, display_t *const display);
 void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds);
 
+void panel_hover(panel_t *const panel, const disp_pos_t pos);
+
 void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render);
-
-
 
 #endif // _PANEL_H_

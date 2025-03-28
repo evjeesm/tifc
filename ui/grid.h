@@ -25,6 +25,8 @@ typedef struct
 
     uint8_t columns;
     uint8_t rows;
+
+    struct grid_area_t *last_hovered;
 }
 grid_t;
 
@@ -55,10 +57,11 @@ typedef struct
 }
 grid_area_opts_t;
 
-typedef struct
+typedef struct grid_area_t
 {
     grid_area_opts_t grid_area_opts;
     disp_area_t area;
+    bool is_hovered;
 }
 grid_area_t;
 
@@ -75,12 +78,14 @@ void grid_add_area(grid_t *const grid,
         const grid_area_opts_t *const span);
 
 typedef void (*area_render_t) (display_t *const display,
-        const disp_area_t area, const void *const source, const size_t limit, const size_t index);
+        const grid_area_t *const area, const void *const source, const size_t limit, const size_t index);
 
 void grid_render(const grid_t *const grid, display_t *const display,
         const void *const source, const size_t limit, const area_render_t render);
 
 void grid_recalculate_layout(grid_t *const grid,
         const disp_area_t *const panel_area);
+
+void grid_hover(grid_t *const grid, const disp_pos_t pos);
 
 #endif// _GRID_H_

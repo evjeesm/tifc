@@ -107,13 +107,45 @@ void grid_render(const grid_t *const grid, display_t *const display,
         border_set_t border = {._ = L"╭╮╯╰┆┄"};
         (void) area;
         (void) border;
-        (void) display;
         if (IS_INVALID_AREA(&area->area)) { return; }
 
-        render(display, area->area, source, limit, i);
+        render(display, area, source, limit, i);
         // display_draw_border(display, BORDER_STYLE_1, border, area->area);
     }
 }
+
+static grid_area_t *find_hovered_area(dynarr_t *const areas, const disp_pos_t pos)
+{
+    const size_t areas_amount = dynarr_size(areas);
+    for (size_t i = 0; i < areas_amount; ++i)
+    {
+        grid_area_t *area = dynarr_get(areas, i);
+
+        if (pos.x >= area->area.first.x && pos.x <= area->area.second.x
+          && pos.y >= area->area.first.y && pos.y <= area->area.second.y)
+        {
+            return area;
+        }
+    }
+    return NULL;
+}
+
+
+void grid_hover(grid_t *const grid, const disp_pos_t pos)
+{
+    grid_area_t *hovered = find_hovered_area(grid->areas, pos);
+
+    if (grid->last_hovered && grid->last_hovered != hovered)
+    {
+        grid->last_hovered->is_hovered = false;
+    }
+    grid->last_hovered = hovered;
+
+    if (!hovered) { return; }
+    hovered->is_hovered = true;
+    
+}
+
 
 static
 void calculate_spans(
@@ -134,6 +166,10 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
 {
     assert(grid);
     assert(panel_area);
+
+    S_LOG(LOGGER_DEBUG, "Panel Area: [%u, %u][%u, %u]\n",
+            panel_area->first.x, panel_area->first.y,
+            panel_area->second.x, panel_area->second.y);
 
     const disp_pos_t panel_size = {
         panel_area->second.x - panel_area->first.x + 1,
