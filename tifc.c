@@ -1,4 +1,5 @@
 #include "tifc.h"
+#include "border.h"
 #include "display.h"
 #include "grid.h"
 #include "layout.h"
@@ -6,6 +7,8 @@
 #include "ui.h"
 
 #include <locale.h>
+#include <stdio.h>
+
 
 tifc_t tifc_init(void)
 {
@@ -18,17 +21,46 @@ tifc_t tifc_init(void)
     return tifc;
 }
 
+
 void tifc_deinit(tifc_t *const tifc)
 {
     input_disable_mouse();
     input_deinit(&tifc->input);
 }
 
+
 void tifc_render(tifc_t *const tifc)
 {
     display_clear(&tifc->display);
     ui_render(&tifc->ui, &tifc->display);
     display_render(&tifc->display);
+}
+
+
+size_t g_array [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+void size_t_array_render(display_t *const display, const disp_area_t area, const void *const source, const size_t limit, const size_t index)
+{
+    const size_t *source_ = source;
+    char buf[18];
+    size_t size = sprintf(buf, "%zu", source_[index]);
+    border_set_t border = {._ = L"╭╮╯╰┆┄"};
+    display_draw_border(display, BORDER_STYLE_1, border, area);
+    if (index < limit)
+    {
+        display_draw_string_aligned(display, size, buf, area, (style_t){0}, LAYOUT_ALIGN_CENTER);
+    }
+    else
+    {
+        display_draw_string_centered(display, 13, "(unavailable)", area, (style_t){.seq=ESC"[31m"});
+    }
+}
+
+
+size_t g_array_amount(const void *const source)
+{
+    (void) source;
+    return sizeof(g_array)/sizeof(g_array[0]);
 }
 
 void tifc_create_ui_layout(tifc_t *const tifc)
@@ -39,40 +71,36 @@ void tifc_create_ui_layout(tifc_t *const tifc)
         .layout = {
             .align = LAYOUT_ALIGN_TOP,
             .size_method = LAYOUT_SIZE_RELATIVE,
-            .size = {.y = 50},
+            .size = {.y = 100},
         },
         .columns = 1,
         .column_layout = (grid_layout_t[]){
-            {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
+            {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
         },
-        .rows = 10,
+        .rows = 11,
         .row_layout = (grid_layout_t[]){
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
-            {.size = 3},
+            {.amount = 11, .size = 3},
         },
-        .areas = 10,
+        .areas = 11,
         .areas_layout = (grid_area_opts_t[]){
-            {{0, 0}, {0, 0}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {1, 1}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {2, 2}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {3, 3}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {4, 4}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {5, 5}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {6, 6}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {7, 7}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {8, 8}, TEXT_ALIGN_LEFT},
-            {{0, 0}, {9, 9}, TEXT_ALIGN_LEFT},
-        }
+            {{0, 0}, {0, 0}},
+            {{0, 0}, {1, 1}},
+            {{0, 0}, {2, 2}},
+            {{0, 0}, {3, 3}},
+            {{0, 0}, {4, 4}},
+            {{0, 0}, {5, 5}},
+            {{0, 0}, {6, 6}},
+            {{0, 0}, {7, 7}},
+            {{0, 0}, {8, 8}},
+            {{0, 0}, {9, 9}},
+            {{0, 0}, {10, 10}},
+        },
+        .data_source = g_array,
+        .data_get_amount = g_array_amount,
+        .data_render = size_t_array_render,
     };
     (void) ui_add_panel(&tifc->ui, opts);
+
 
     // opts->title = "left";
     // opts->layout.align = LAYOUT_ALIGN_LEFT;

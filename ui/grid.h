@@ -30,35 +30,28 @@ grid_t;
 
 typedef struct
 {
-    layout_size_method_t size_method;
-    uint16_t             size;
-}
-grid_layout_t;
-
-typedef struct
-{
     uint16_t start;
     uint16_t end;
 }
 span_t;
 
+typedef struct
+{
+    layout_size_method_t size_method;
+    uint16_t             size;
+    uint16_t             amount; /* amount of entries affected by this definition */
+}
+grid_layout_t;
+
+
 #define IS_INVALID_SPAN(span_ptr) ((span_ptr)->start == (uint16_t) -1 \
                                   && (span_ptr)->end == (uint16_t) -1)
 #define INVALID_SPAN ((span_t){-1, -1})
-
-typedef enum
-{
-    TEXT_ALIGN_LEFT = 0,
-    TEXT_ALIGN_RIGHT,
-    TEXT_ALIGN_CENTER
-}
-text_align_t;
 
 typedef struct
 {
     span_t column;
     span_t row;
-    text_align_t text_align;
 }
 grid_area_opts_t;
 
@@ -72,8 +65,8 @@ grid_area_t;
 void grid_init(grid_t *const grid,
     uint8_t columns,
     uint8_t rows,
-    grid_layout_t column_layout[columns],
-    grid_layout_t row_layout[rows]);
+    grid_layout_t* column_layout,
+    grid_layout_t* row_layout);
 
 void grid_deinit(grid_t *const grid);
 
@@ -81,7 +74,11 @@ void grid_deinit(grid_t *const grid);
 void grid_add_area(grid_t *const grid,
         const grid_area_opts_t *const span);
 
-void grid_render(const grid_t *const grid, display_t *const display);
+typedef void (*area_render_t) (display_t *const display,
+        const disp_area_t area, const void *const source, const size_t limit, const size_t index);
+
+void grid_render(const grid_t *const grid, display_t *const display,
+        const void *const source, const size_t limit, const area_render_t render);
 
 void grid_recalculate_layout(grid_t *const grid,
         const disp_area_t *const panel_area);

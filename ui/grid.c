@@ -12,8 +12,8 @@
 void grid_init(grid_t *const grid,
     uint8_t columns,
     uint8_t rows,
-    grid_layout_t column_layout[columns],
-    grid_layout_t row_layout[rows])
+    grid_layout_t* column_layout,
+    grid_layout_t* row_layout)
 {
     assert(grid);
     assert(columns > 0);
@@ -39,19 +39,34 @@ void grid_init(grid_t *const grid,
     // TODO: should implement reserve range for dynarr
     dynarr_spread_insert(&grid->spans, 0, columns + rows, TMP_REF(span_t, 0));
 
-    grid->areas = dynarr_create
-        (
-            .element_size = sizeof(grid_area_t),
-        );
+    grid->areas = dynarr_create (
+        .element_size = sizeof(grid_area_t),
+    );
 
+    uint8_t rept = 0;
     for (uint8_t c = 0; c < columns; ++c)
     {
-        dynarr_append(&grid->layout, &column_layout[c]);
+        assert(0 < column_layout->amount);
+        if (column_layout->amount == rept)
+        {
+            rept = 0;
+            ++column_layout;
+        }
+        ++rept;
+        dynarr_append(&grid->layout, column_layout);
     }
 
+    rept = 0;
     for (uint8_t r = 0; r < rows; ++r)
     {
-        dynarr_append(&grid->layout, &row_layout[r]);
+        assert(0 < row_layout->amount);
+        if (row_layout->amount == rept)
+        {
+            rept = 0;
+            ++row_layout;
+        }
+        ++rept;
+        dynarr_append(&grid->layout, row_layout);
     }
 }
 
@@ -82,7 +97,8 @@ void grid_add_area(grid_t *const grid, const grid_area_opts_t *const span)
 }
 
 
-void grid_render(const grid_t *const grid, display_t *const display)
+void grid_render(const grid_t *const grid, display_t *const display,
+        const void *const source, const size_t limit, const area_render_t render)
 {
     const size_t areas_amount = dynarr_size(grid->areas);
     for (size_t i = 0; i < areas_amount; ++i)
@@ -92,8 +108,10 @@ void grid_render(const grid_t *const grid, display_t *const display)
         (void) area;
         (void) border;
         (void) display;
-        if (! IS_INVALID_AREA(&area->area))
-            display_draw_border(display, BORDER_STYLE_1, border, area->area);
+        if (IS_INVALID_AREA(&area->area)) { return; }
+
+        render(display, area->area, source, limit, i);
+        // display_draw_border(display, BORDER_STYLE_1, border, area->area);
     }
 }
 

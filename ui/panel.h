@@ -20,6 +20,8 @@ typedef enum
 }
 panel_content_type_t;
 
+typedef size_t (*data_get_amount_t) (const void *const data_source);
+
 typedef struct
 {
     const char    * title;
@@ -27,6 +29,10 @@ typedef struct
     panel_layout_t  layout;
     style_t         style;
     disp_area_t     area;
+
+    void *data_source;
+    data_get_amount_t data_get_amount;
+    area_render_t data_render;
 
     panel_content_type_t content_type;
     union content {
@@ -36,10 +42,15 @@ typedef struct
 }
 panel_t;
 
+
 typedef struct
 {
     const char     * title;
     panel_layout_t   layout;
+
+    void *data_source;
+    data_get_amount_t data_get_amount;
+    area_render_t data_render;
 
     // Specific to grid content type:
     //  (columns == 0 && rows == 0) means raw content type
@@ -61,4 +72,9 @@ void panel_render(const panel_t *panel, display_t *const display);
 
 void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds);
+
+void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render);
+
+
+
 #endif // _PANEL_H_

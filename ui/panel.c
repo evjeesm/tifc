@@ -57,6 +57,7 @@ panel_draw_title(const panel_t *panel,
     display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
 }
 
+
 void panel_init(panel_t *const panel,
                 const panel_opts_t *const opts)
 {
@@ -73,6 +74,9 @@ void panel_init(panel_t *const panel,
         .content_type = (opts->columns == 0 && opts->rows == 0)
             ? PANEL_CONTENT_TYPE_RAW
             : PANEL_CONTENT_TYPE_GRID,
+        .data_source = opts->data_source,
+        .data_get_amount = opts->data_get_amount,
+        .data_render = opts->data_render,
     };
 
     if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
@@ -94,6 +98,7 @@ void panel_init(panel_t *const panel,
     }
 }
 
+
 void panel_deinit(panel_t *const panel)
 {
     assert(panel);
@@ -104,6 +109,7 @@ void panel_deinit(panel_t *const panel)
     }
     grid_deinit(&panel->content.grid);
 }
+
 
 void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds)
@@ -121,6 +127,7 @@ void panel_recalculate_layout(panel_t *panel,
     // GRID:
     grid_recalculate_layout(&panel->content.grid, &panel->area); // TODO
 }
+
 
 void panel_render(const panel_t *panel,
                   display_t *const display)
@@ -142,8 +149,16 @@ void panel_render(const panel_t *panel,
         // TODO: custom render
         return;
     }
+    size_t amount = panel->data_get_amount(panel->data_source);
+    grid_render(&panel->content.grid, display, panel->data_source, amount, panel->data_render);
+}
 
-    grid_render(&panel->content.grid, display);
+
+void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render)
+{
+    assert(panel);
+    panel->data_source = data_source;
+    panel->data_render = data_render;
 }
 
 
