@@ -11,7 +11,7 @@ typedef struct
 }
 disp_pos_t;
 
-/* Describes are of the screen */
+/* Describes area of the screen */
 typedef struct
 {
     disp_pos_t first;  /* left-top corner     */
