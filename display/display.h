@@ -3,6 +3,7 @@
 
 #include "display_types.h"
 #include "border.h"
+#include "layout.h"
 #include <wchar.h>
 
 #include <stdbool.h>
@@ -79,6 +80,15 @@ display_draw_string_centered(display_t *const display,
         const char string[size],
         disp_area_t area,
         style_t style);
+
+void
+display_draw_string_aligned(display_t *const display,
+        unsigned int size,
+        const char string[size],
+        disp_area_t area,
+        style_t style,
+        layout_align_t text_align);
+
 void
 display_render(display_t *const display);
 

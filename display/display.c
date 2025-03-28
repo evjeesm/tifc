@@ -5,6 +5,8 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <assert.h>
+#include <stdarg.h>
+#include "layout.h"
 
 static int prev_buffer(const int active);
 static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b);
@@ -25,6 +27,7 @@ static void resize_handler(int signo, siginfo_t *info, void *ctx)
     g_resize_handler.resize_detected = true;
 }
 
+
 void display_set_resize_handler(display_t *const display, resize_hook_with_data_t resize_hook)
 {
     g_resize_handler.resize_hook = resize_hook;
@@ -34,6 +37,7 @@ void display_set_resize_handler(display_t *const display, resize_hook_with_data_
     display->size = get_terminal_size();
     printf(CLEAR);
 }
+
 
 void display_render(display_t *const display)
 {
@@ -49,6 +53,7 @@ void display_render(display_t *const display)
 
     fflush(stdout);
 }
+
 
 void display_render_area(display_t *const display, disp_area_t area)
 {
@@ -96,10 +101,12 @@ void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos)
     display->buffers[display->active][pos.y][pos.x].ch = ch;
 }
 
+
 void display_set_style(display_t *const display, style_t style, disp_pos_t pos)
 {
     display->buffers[display->active][pos.y][pos.x].style = style;
 }
+
 
 void display_draw_border(display_t *const display, style_t style, border_set_t border, disp_area_t area)
 {
@@ -124,6 +131,7 @@ void display_draw_border(display_t *const display, style_t style, border_set_t b
     }
 }
 
+
 void display_fill_area(display_t *const display, style_t style, disp_area_t area)
 {
     for (unsigned int y = area.first.y; y <= area.second.y; ++y)
@@ -137,6 +145,7 @@ void display_fill_area(display_t *const display, style_t style, disp_area_t area
     }
 }
 
+
 void display_draw_string(display_t *const display, unsigned int size, const char string[size], disp_pos_t pos, style_t style)
 {
     for (unsigned int i = 0; i < size; ++i, ++pos.x)
@@ -145,6 +154,7 @@ void display_draw_string(display_t *const display, unsigned int size, const char
         display_set_style(display, style, pos);
     }
 }
+
 
 void display_draw_string_centered(display_t *const display, unsigned int size, const char string[size], disp_area_t area, style_t style)
 {
@@ -166,16 +176,117 @@ void display_draw_string_centered(display_t *const display, unsigned int size, c
     display_draw_string(display, size, string, pos, style);
 }
 
+
+#define CENT_HOR { \
+        pos.x = area.first.x; \
+        if (size <= hmax) \
+        { \
+            unsigned int xpad = hmax - size; \
+            pos.x += (xpad / 2); \
+        } \
+        else \
+        { \
+            string += (size - hmax); \
+            size = hmax; \
+        } \
+    }
+
+#define CENT_VER { pos.y = area.first.y + (vmax / 2); }
+
+#define ALIGN_TOP { pos.y = area.first.y; }
+
+#define ALIGN_BOT { pos.y = area.second.y; }
+
+#define ALIGN_LEFT { \
+        pos.x = area.first.x; \
+        if (size > hmax) \
+        { \
+            size = hmax; \
+        } \
+    }
+
+#define ALIGN_RIGHT { \
+        pos.x = area.first.x; \
+        if (size > hmax) \
+        { \
+            string += (size - hmax); \
+            size = hmax; \
+        } \
+        else \
+        { \
+            pos.x += (hmax - size + 1); \
+        } \
+    }
+
+void display_draw_string_aligned(display_t *const display,
+        unsigned int size,
+        const char string[size],
+        disp_area_t area,
+        style_t style,
+        layout_align_t text_align)
+{
+    assert(area.second.x <= display->size.x);
+    assert(area.second.y <= display->size.y);
+
+    unsigned int hmax = area.second.x - area.first.x;
+    unsigned int vmax = area.second.y - area.first.y;
+    disp_pos_t pos = {0};
+
+    if (LAYOUT_ALIGN_CENTER == text_align
+        || 0 == text_align)
+    {
+        CENT_VER CENT_HOR
+    }
+    else if (LAYOUT_ALIGN_TOP_H_CENTER == text_align)
+    {
+        CENT_HOR ALIGN_TOP
+    }
+    else if (LAYOUT_ALIGN_BOT_H_CENTER == text_align)
+    {
+        CENT_HOR ALIGN_BOT
+    }
+    else if (LAYOUT_ALIGN_LEFT_V_CENTER == text_align)
+    {
+        CENT_VER ALIGN_LEFT
+    }
+    else if (LAYOUT_ALIGN_RIGHT_V_CENTER == text_align)
+    {
+        CENT_VER ALIGN_RIGHT
+    }
+    else
+    {
+        if (LAYOUT_ALIGN_TOP & text_align)   { ALIGN_TOP   }
+        if (LAYOUT_ALIGN_BOT & text_align)   { ALIGN_BOT   }
+        if (LAYOUT_ALIGN_LEFT & text_align)  { ALIGN_LEFT  }
+        if (LAYOUT_ALIGN_RIGHT & text_align) { ALIGN_RIGHT }
+    }
+
+    display_draw_string(display, size, string, pos, style);
+}
+
+// void display_draw_data(display_t *const display, disp_area_t area, style_t style, const char *format, ...)
+// {
+//     va_list list;
+//     va_start(list, format);
+//     char buffer[256];
+//     
+//     vsprintf(buffer, format, list);
+//     va_end(list);
+// }
+
+
 static void set_border(display_t *const display, wchar_t border_char, disp_pos_t pos, style_t style)
 {
     display_set_style(display, style, pos);
     display_set_char(display, border_char, pos);
 }
 
+
 void display_erase(void)
 {
     printf(CLEAR);
 }
+
 
 void display_clear(display_t *const display)
 {
@@ -187,6 +298,7 @@ void display_clear(display_t *const display)
         }
     });
 }
+
 
 void display_clear_area(display_t *const display, disp_area_t area)
 {
