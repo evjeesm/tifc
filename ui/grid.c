@@ -101,6 +101,7 @@ void grid_add_area(grid_t *const grid, const grid_area_opts_t *const opts)
 void grid_render(const grid_t *const grid, display_t *const display,
         const void *const source, const size_t limit, const area_render_t render)
 {
+    assert(render);
     const size_t areas_amount = dynarr_size(grid->areas);
     for (size_t i = 0; i < areas_amount; ++i)
     {
@@ -109,7 +110,6 @@ void grid_render(const grid_t *const grid, display_t *const display,
         (void) area;
         (void) border;
         if (IS_INVALID_AREA(&area->area)) { return; }
-
         render(display, area, source, limit, i + grid->scroll_offset);
         // display_draw_border(display, BORDER_STYLE_1, border, area->area);
     }
@@ -164,13 +164,22 @@ static size_t count_valid_areas(const dynarr_t *const areas)
     return count;
 }
 
-void grid_scroll(grid_t *const grid, const disp_pos_t pos, const int direction, const size_t limit)
+static void adjust_scroll_position(grid_t *const grid,
+        const size_t limit)
 {
     // CACHE? or maybe use last_hovered 
     const size_t valid_areas = count_valid_areas(grid->areas);
-    // grid_area_t *area = find_hovered_area(grid->areas, pos);
-    (void)(pos);
+    const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
 
+    if (grid->scroll_offset >= max_scroll_offset)
+    {
+        grid->scroll_offset = max_scroll_offset;
+        return;
+    }
+}
+
+void grid_scroll(grid_t *const grid, const int direction, const size_t limit)
+{
     if (!(grid->is_scrollable)) { return; }
     if (SCROLL_UP == direction)
     {
@@ -179,32 +188,18 @@ void grid_scroll(grid_t *const grid, const disp_pos_t pos, const int direction, 
         return;
     }
 
-    const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
-
-    if (grid->scroll_offset >= max_scroll_offset)
-    {
-        grid->scroll_offset = max_scroll_offset;
-        return;
-    }
-
     ++grid->scroll_offset;
+
+    adjust_scroll_position(grid, limit);
 }
 
 
-static
-void calculate_spans(
-        size_t start_offset,
-        size_t length,
-        const size_t spans_amount,
-        const size_t offset,
-        const dynarr_t *const grid_layout,
-        dynarr_t *const grid_spans
-    );
+static void calculate_spans(size_t start_offset, size_t length,
+        const size_t spans_amount, const size_t offset,
+        const dynarr_t *const grid_layout, dynarr_t *const grid_spans);
 
-static
-void calc_areas(dynarr_t *const areas,
-        span_t columns[],
-        span_t rows[]);
+static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[]);
+
 
 void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_area)
 {
@@ -247,18 +242,14 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
     calc_areas(grid->areas,
         dynarr_get(grid->spans, 0),
         dynarr_get(grid->spans, grid->columns));
+
+    adjust_scroll_position(grid, 0);
 }
 
 
-static
-void calculate_spans(
-        size_t start_offset,
-        size_t length,
-        const size_t spans_amount,
-        const size_t offset,
-        const dynarr_t *const grid_layout,
-        dynarr_t *const grid_spans
-    )
+static void calculate_spans(size_t start_offset, size_t length,
+        const size_t spans_amount, const size_t offset,
+        const dynarr_t *const grid_layout, dynarr_t *const grid_spans)
 {
     // access layout
     const grid_layout_t *layout = dynarr_get(grid_layout, offset);
@@ -300,10 +291,7 @@ void calculate_spans(
 }
 
 
-static
-void calc_areas(dynarr_t *const areas,
-        span_t columns[],
-        span_t rows[])
+static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[])
 {
     const size_t areas_amount = dynarr_size(areas);
 

@@ -40,7 +40,8 @@ void tifc_render(tifc_t *const tifc)
 
 size_t g_array [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-void size_t_array_render(display_t *const display, const grid_area_t * const area, const void *const source, const size_t limit, const size_t index)
+void size_t_array_render(display_t *const display, const grid_area_t *const area,
+        const void *const source, const size_t limit, const size_t index)
 {
     const size_t *source_ = source;
     char buf[18];
@@ -64,6 +65,15 @@ void size_t_array_render(display_t *const display, const grid_area_t * const are
     }
 }
 
+void default_render(display_t *const display, const grid_area_t *const area,
+        const void *const source, const size_t limit, const size_t index)
+{
+    (void) source; (void) limit; (void) index;
+    border_set_t border = {._ = L"╭╮╯╰┆┄"};
+
+    display_draw_border(display, BORDER_STYLE_1, border, area->area);
+}
+
 
 size_t g_array_amount(const void *const source)
 {
@@ -73,13 +83,13 @@ size_t g_array_amount(const void *const source)
 
 void tifc_create_ui_layout(tifc_t *const tifc)
 {
-    panel_opts_t *opts = &(panel_opts_t)
+    panel_opts_t *list_opts = &(panel_opts_t)
     {
-        .title = "top",
+        .title = "list of size_t",
         .layout = {
-            .align = LAYOUT_ALIGN_TOP,
+            .align = LAYOUT_ALIGN_LEFT,
             .size_method = LAYOUT_SIZE_RELATIVE,
-            .size = {.y = 100},
+            .size = {.x = 30},
         },
         .columns = 1,
         .column_layout = (grid_layout_t[]){
@@ -107,6 +117,30 @@ void tifc_create_ui_layout(tifc_t *const tifc)
         .data_get_amount = g_array_amount,
         .data_render = size_t_array_render,
         .scrollable = true,
+    };
+    (void) ui_add_panel(&tifc->ui, list_opts);
+
+    panel_opts_t *opts = &(panel_opts_t)
+    {
+        .title = "---",
+        .layout = {
+            .align = LAYOUT_ALIGN_RIGHT,
+            .size_method = LAYOUT_SIZE_RELATIVE,
+            .size = {.x = 100},
+        },
+        .columns = 1,
+        .column_layout = (grid_layout_t[]){
+            {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
+        },
+        .rows = 1,
+        .row_layout = (grid_layout_t[]){
+            {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
+        },
+        .areas = 1,
+        .areas_layout = (grid_area_opts_t[]){
+            {{0, 0}, {0, 0}},
+        },
+        .data_render = default_render,
     };
     (void) ui_add_panel(&tifc->ui, opts);
 

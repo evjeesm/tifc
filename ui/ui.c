@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "logger.h"
 #include "panel.h"
 #include "display.h"
 #include "sparse.h"
@@ -120,7 +121,7 @@ static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos)
 static void on_hover(const mouse_event_t *const hover, void *const param)
 {
     ui_t *ui = param;
-    printf(ROW(1) "UI::hover, at %u, %u\n",
+    S_LOG(LOGGER_DEBUG, "UI::hover, at %u, %u\n",
         hover->position.x, hover->position.y);
 
     /* zero based position */
@@ -133,41 +134,37 @@ static void on_hover(const mouse_event_t *const hover, void *const param)
 static void on_press(const mouse_event_t *const press, void *const param)
 {
     (void) param;
-    printf(ROW(1) "UI::press %d, at %u, %u\n",
-        press->mouse_button,
-        press->position.x, press->position.y);
+    S_LOG(LOGGER_DEBUG, "UI::press %d, at %u, %u\n",
+        press->mouse_button, press->position.x, press->position.y);
 }
 
 static void on_release(const mouse_event_t *const press, void *const param)
 {
     (void) param;
-    printf(ROW(1) "UI::release %d, at %u, %u\n",
-        press->mouse_button,
-        press->position.x, press->position.y);
+    S_LOG(LOGGER_DEBUG, "UI::release %d, at %u, %u\n",
+        press->mouse_button, press->position.x, press->position.y);
 }
 
 static void on_drag_begin(const mouse_event_t *const begin,
         void *const param)
 {
     (void) param;
-    printf(ROW(1) "UI::drag %d begin, at %u, %u\n",
-        begin->mouse_button,
-        begin->position.x, begin->position.y);
+    S_LOG(LOGGER_DEBUG, "UI::drag %d begin, at %u, %u\n",
+        begin->mouse_button, begin->position.x, begin->position.y);
 }
 
 static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param)
 {
     (void) param;
-    printf(ROW(1) "UI::drag %d drag moving to %u, %u\n",
-        begin->mouse_button,
-        moved->position.x, moved->position.y);
+    S_LOG(LOGGER_DEBUG, "UI::drag %d drag moving to %u, %u\n",
+        begin->mouse_button, moved->position.x, moved->position.y);
 }
 
 static void on_drag_end(const mouse_event_t *const begin,
         const mouse_event_t *const end, void *const param)
 {
     (void) param;
-    printf(ROW(1) "UI::drag %d from %u, %u to %u, %u\n",
+    S_LOG(LOGGER_DEBUG, "UI::drag %d from %u, %u to %u, %u\n",
         begin->mouse_button,
         begin->position.x, begin->position.y,
         end->position.x, end->position.y);
@@ -177,9 +174,8 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
 {
     ui_t *ui = param;
 
-    printf(ROW(1) "UI::scroll %d at %u, %u\n",
-        scroll->mouse_button,
-        scroll->position.x, scroll->position.y);
+    S_LOG(LOGGER_DEBUG, "UI::scroll %d at %u, %u\n",
+        scroll->mouse_button, scroll->position.x, scroll->position.y);
 
     /* zero based position */
     disp_pos_t norm_pos = {scroll->position.x - 1, scroll->position.y - 1};
@@ -187,6 +183,6 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
 
     if (!panel) { return; }
 
-    panel_scroll(panel, norm_pos, scroll->mouse_button);
+    panel_scroll(panel, scroll->mouse_button);
 }
 

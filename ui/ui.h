@@ -10,7 +10,6 @@ typedef struct
 {
     input_hooks_t hooks;
     sparse_t     *panels;
-    sparse_t     *items;
 }
 ui_t;
 

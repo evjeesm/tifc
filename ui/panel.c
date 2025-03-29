@@ -152,7 +152,12 @@ void panel_render(const panel_t *panel,
         // TODO: custom render
         return;
     }
-    size_t amount = panel->data_get_amount(panel->data_source);
+
+    size_t amount = 0;
+    if (panel->data_source)
+    { 
+        amount = panel->data_get_amount(panel->data_source);
+    }
     grid_render(&panel->content.grid, display, panel->data_source, amount, panel->data_render);
 }
 
@@ -168,15 +173,19 @@ void panel_hover(panel_t *const panel, const disp_pos_t pos)
 }
 
 
-void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction)
+void panel_scroll(panel_t *const panel, const int direction)
 {
     if (panel->content_type == PANEL_CONTENT_TYPE_RAW)
     {
         return;
     }
-
-    size_t amount = panel->data_get_amount(panel->data_source);
-    grid_scroll(&panel->content.grid, pos, direction, amount);
+    
+    size_t amount = 0;
+    if (panel->data_source)
+    { 
+        amount = panel->data_get_amount(panel->data_source);
+    }
+    grid_scroll(&panel->content.grid, direction, amount);
 }
 
 

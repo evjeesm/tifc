@@ -76,7 +76,7 @@ void panel_recalculate_layout(panel_t *panel,
 
 void panel_hover(panel_t *const panel, const disp_pos_t pos);
 
-void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction);
+void panel_scroll(panel_t *const panel, const int direction);
 
 void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render);
 

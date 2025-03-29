@@ -88,6 +88,6 @@ void grid_recalculate_layout(grid_t *const grid,
 
 void grid_hover(grid_t *const grid, const disp_pos_t pos);
 
-void grid_scroll(grid_t *const grid, const disp_pos_t pos, const int direction, const size_t limit);
+void grid_scroll(grid_t *const grid, const int direction, const size_t limit);
 
 #endif// _GRID_H_
