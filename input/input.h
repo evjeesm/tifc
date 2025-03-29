@@ -27,8 +27,8 @@
 
 typedef enum
 {
-    MOUSE_1,
-    MOUSE_2,
+    MOUSE_1, SCROLL_UP = MOUSE_1,
+    MOUSE_2, SCROLL_DOWN = MOUSE_2,
     MOUSE_3,
     MOUSE_NONE
 }

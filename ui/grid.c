@@ -4,6 +4,7 @@
 #include "display_types.h"
 #include "dynarr.h"
 #include "layout.h"
+#include "input.h"
 
 #include <assert.h>
 
@@ -79,17 +80,17 @@ void grid_deinit(grid_t *const grid)
 }
 
 
-void grid_add_area(grid_t *const grid, const grid_area_opts_t *const span)
+void grid_add_area(grid_t *const grid, const grid_area_opts_t *const opts)
 {
     assert(grid);
 
-    assert(span->column.start <= span->column.end);
-    assert(span->row.start <= span->row.end);
-    assert(span->column.end < grid->columns);
-    assert(span->row.end < grid->rows);
+    assert(opts->column.start <= opts->column.end);
+    assert(opts->row.start <= opts->row.end);
+    assert(opts->column.end < grid->columns);
+    assert(opts->row.end < grid->rows);
 
     grid_area_t area = {
-        .grid_area_opts = *span,
+        .grid_area_opts = *opts,
         .area = INVALID_AREA,
     };
     // implement reserve for dynarr ?
@@ -109,7 +110,7 @@ void grid_render(const grid_t *const grid, display_t *const display,
         (void) border;
         if (IS_INVALID_AREA(&area->area)) { return; }
 
-        render(display, area, source, limit, i);
+        render(display, area, source, limit, i + grid->scroll_offset);
         // display_draw_border(display, BORDER_STYLE_1, border, area->area);
     }
 }
@@ -144,6 +145,49 @@ void grid_hover(grid_t *const grid, const disp_pos_t pos)
     if (!hovered) { return; }
     hovered->is_hovered = true;
     
+}
+
+static int valid_area_count(const void *const element, void *const param)
+{
+    size_t *count = param;
+    const grid_area_t *area = element;
+
+    if (! IS_INVALID_AREA(&area->area)) { ++*count; }
+
+    return 0;
+}
+
+static size_t count_valid_areas(const dynarr_t *const areas)
+{
+    size_t count = 0;
+    dynarr_foreach(areas, valid_area_count, &count);
+    return count;
+}
+
+void grid_scroll(grid_t *const grid, const disp_pos_t pos, const int direction, const size_t limit)
+{
+    // CACHE? or maybe use last_hovered 
+    const size_t valid_areas = count_valid_areas(grid->areas);
+    // grid_area_t *area = find_hovered_area(grid->areas, pos);
+    (void)(pos);
+
+    if (!(grid->is_scrollable)) { return; }
+    if (SCROLL_UP == direction)
+    {
+        if (grid->scroll_offset == 0) { return; }
+        --grid->scroll_offset;
+        return;
+    }
+
+    const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
+
+    if (grid->scroll_offset >= max_scroll_offset)
+    {
+        grid->scroll_offset = max_scroll_offset;
+        return;
+    }
+
+    ++grid->scroll_offset;
 }
 
 

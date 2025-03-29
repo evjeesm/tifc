@@ -51,6 +51,7 @@ typedef struct
     void *data_source;
     data_get_amount_t data_get_amount;
     area_render_t data_render;
+    bool scrollable;
 
     // Specific to grid content type:
     //  (columns == 0 && rows == 0) means raw content type
@@ -74,6 +75,8 @@ void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds);
 
 void panel_hover(panel_t *const panel, const disp_pos_t pos);
+
+void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction);
 
 void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render);
 

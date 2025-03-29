@@ -23,6 +23,9 @@ typedef struct
         size will extend to `rows * columns` at max. */
     dynarr_t *areas;
 
+    bool is_scrollable;
+    size_t scroll_offset;
+
     uint8_t columns;
     uint8_t rows;
 
@@ -61,24 +64,21 @@ typedef struct grid_area_t
 {
     grid_area_opts_t grid_area_opts;
     disp_area_t area;
+
     bool is_hovered;
 }
 grid_area_t;
 
-void grid_init(grid_t *const grid,
-    uint8_t columns,
-    uint8_t rows,
-    grid_layout_t* column_layout,
-    grid_layout_t* row_layout);
+void grid_init(grid_t *const grid, uint8_t columns, uint8_t rows,
+        grid_layout_t* column_layout, grid_layout_t* row_layout);
 
 void grid_deinit(grid_t *const grid);
 
 
-void grid_add_area(grid_t *const grid,
-        const grid_area_opts_t *const span);
+void grid_add_area(grid_t *const grid, const grid_area_opts_t *const opts);
 
-typedef void (*area_render_t) (display_t *const display,
-        const grid_area_t *const area, const void *const source, const size_t limit, const size_t index);
+typedef void (*area_render_t) (display_t *const display, const grid_area_t *const area,
+        const void *const source, const size_t limit, const size_t index);
 
 void grid_render(const grid_t *const grid, display_t *const display,
         const void *const source, const size_t limit, const area_render_t render);
@@ -87,5 +87,7 @@ void grid_recalculate_layout(grid_t *const grid,
         const disp_area_t *const panel_area);
 
 void grid_hover(grid_t *const grid, const disp_pos_t pos);
+
+void grid_scroll(grid_t *const grid, const disp_pos_t pos, const int direction, const size_t limit);
 
 #endif// _GRID_H_

@@ -91,6 +91,9 @@ void panel_init(panel_t *const panel,
         opts->rows,
         opts->column_layout,
         opts->row_layout);
+    
+    // set grid to scollable 
+    panel->content.grid.is_scrollable = opts->scrollable;
 
     for (size_t a = 0; a < opts->areas; ++a)
     {
@@ -162,6 +165,18 @@ void panel_hover(panel_t *const panel, const disp_pos_t pos)
     }
 
     grid_hover(&panel->content.grid, pos);
+}
+
+
+void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction)
+{
+    if (panel->content_type == PANEL_CONTENT_TYPE_RAW)
+    {
+        return;
+    }
+
+    size_t amount = panel->data_get_amount(panel->data_source);
+    grid_scroll(&panel->content.grid, pos, direction, amount);
 }
 
 

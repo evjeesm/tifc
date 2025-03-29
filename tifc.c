@@ -106,6 +106,7 @@ void tifc_create_ui_layout(tifc_t *const tifc)
         .data_source = g_array,
         .data_get_amount = g_array_amount,
         .data_render = size_t_array_render,
+        .scrollable = true,
     };
     (void) ui_add_panel(&tifc->ui, opts);
 
