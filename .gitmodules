@@ -10,3 +10,6 @@
 [submodule "deps/circbuf"]
 	path = deps/circbuf
 	url = https://github.com/evjeesm/circbuf
+[submodule "deps/arena"]
+	path = deps/arena
+	url = https://github.com/evjeesm/arena.git
