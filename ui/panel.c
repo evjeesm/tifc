@@ -56,12 +56,6 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
         .data_render = opts->data_render,
     };
 
-    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
-    {
-        // TODO: allocate raw panel
-        return;
-    }
-
     // GRID CONTENT:
     grid_init(&panel->content.grid,
         opts->columns,
@@ -82,11 +76,6 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
 void panel_deinit(panel_t *const panel)
 {
     assert(panel);
-    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
-    {
-        // TODO: deallocate raw panel
-        return;
-    }
     grid_deinit(&panel->content.grid);
 }
 
@@ -96,12 +85,6 @@ void panel_recalculate_layout(panel_t *panel, disp_area_t *const bounds)
     panel->area = calc_panel_area(&panel->layout, bounds);
 
     if (IS_INVALID_AREA(&panel->area)) return;
-
-    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
-    {
-        // recalculate for raw
-        return;
-    }
 
     // GRID:
     grid_recalculate_layout(&panel->content.grid, &panel->area); // TODO
@@ -121,13 +104,6 @@ void panel_render(const panel_t *panel, display_t *const display)
     // display_fill_area(display, panel->style, panel_area);
     panel_draw_title(panel, display);
 
-    // render temporary TODO
-    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
-    {
-        // TODO: custom render
-        return;
-    }
-
     size_t amount = 0;
     if (panel->data_source)
     { 
@@ -139,22 +115,12 @@ void panel_render(const panel_t *panel, display_t *const display)
 
 void panel_hover(panel_t *const panel, const disp_pos_t pos)
 {
-    if (panel->content_type == PANEL_CONTENT_TYPE_RAW)
-    {
-        return;
-    }
-
     grid_hover(&panel->content.grid, pos);
 }
 
 
 void panel_scroll(panel_t *const panel, const int direction)
 {
-    if (panel->content_type == PANEL_CONTENT_TYPE_RAW)
-    {
-        return;
-    }
-    
     size_t amount = 0;
     if (panel->data_source)
     { 
