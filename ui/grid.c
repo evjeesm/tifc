@@ -10,11 +10,23 @@
 
 #define MIN_GRID_AREA_SIZE 1
 
-void grid_init(grid_t *const grid,
-    uint8_t columns,
-    uint8_t rows,
-    grid_layout_t* column_layout,
-    grid_layout_t* row_layout)
+static void unwrap_opts(dynarr_t **const grid_layout, grid_layout_t *opts, const size_t amount);
+
+static void calculate_spans(size_t start_offset, size_t length,
+        const size_t spans_amount, const size_t offset,
+        const dynarr_t *const grid_layout, dynarr_t *const grid_spans);
+
+static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[]);
+
+static grid_area_t *find_hovered_area(dynarr_t *const areas, const disp_pos_t pos);
+
+static void adjust_scroll_position(grid_t *const grid, const size_t limit);
+static size_t count_valid_areas(const dynarr_t *const areas);
+static int valid_area_count(const void *const element, void *const param);
+
+
+void grid_init(grid_t *const grid, uint8_t columns, uint8_t rows,
+        grid_layout_t* column_layout, grid_layout_t* row_layout)
 {
     assert(grid);
     assert(columns > 0);
@@ -44,31 +56,8 @@ void grid_init(grid_t *const grid,
         .element_size = sizeof(grid_area_t),
     );
 
-    uint8_t rept = 0;
-    for (uint8_t c = 0; c < columns; ++c)
-    {
-        assert(0 < column_layout->amount);
-        if (column_layout->amount == rept)
-        {
-            rept = 0;
-            ++column_layout;
-        }
-        ++rept;
-        dynarr_append(&grid->layout, column_layout);
-    }
-
-    rept = 0;
-    for (uint8_t r = 0; r < rows; ++r)
-    {
-        assert(0 < row_layout->amount);
-        if (row_layout->amount == rept)
-        {
-            rept = 0;
-            ++row_layout;
-        }
-        ++rept;
-        dynarr_append(&grid->layout, row_layout);
-    }
+    unwrap_opts(&grid->layout, column_layout, columns);
+    unwrap_opts(&grid->layout, row_layout, rows);
 }
 
 
@@ -115,22 +104,6 @@ void grid_render(const grid_t *const grid, display_t *const display,
     }
 }
 
-static grid_area_t *find_hovered_area(dynarr_t *const areas, const disp_pos_t pos)
-{
-    const size_t areas_amount = dynarr_size(areas);
-    for (size_t i = 0; i < areas_amount; ++i)
-    {
-        grid_area_t *area = dynarr_get(areas, i);
-
-        if (pos.x >= area->area.first.x && pos.x <= area->area.second.x
-          && pos.y >= area->area.first.y && pos.y <= area->area.second.y)
-        {
-            return area;
-        }
-    }
-    return NULL;
-}
-
 
 void grid_hover(grid_t *const grid, const disp_pos_t pos)
 {
@@ -144,39 +117,8 @@ void grid_hover(grid_t *const grid, const disp_pos_t pos)
 
     if (!hovered) { return; }
     hovered->is_hovered = true;
-    
 }
 
-static int valid_area_count(const void *const element, void *const param)
-{
-    size_t *count = param;
-    const grid_area_t *area = element;
-
-    if (! IS_INVALID_AREA(&area->area)) { ++*count; }
-
-    return 0;
-}
-
-static size_t count_valid_areas(const dynarr_t *const areas)
-{
-    size_t count = 0;
-    dynarr_foreach(areas, valid_area_count, &count);
-    return count;
-}
-
-static void adjust_scroll_position(grid_t *const grid,
-        const size_t limit)
-{
-    // CACHE? or maybe use last_hovered 
-    const size_t valid_areas = count_valid_areas(grid->areas);
-    const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
-
-    if (grid->scroll_offset >= max_scroll_offset)
-    {
-        grid->scroll_offset = max_scroll_offset;
-        return;
-    }
-}
 
 void grid_scroll(grid_t *const grid, const int direction, const size_t limit)
 {
@@ -192,13 +134,6 @@ void grid_scroll(grid_t *const grid, const int direction, const size_t limit)
 
     adjust_scroll_position(grid, limit);
 }
-
-
-static void calculate_spans(size_t start_offset, size_t length,
-        const size_t spans_amount, const size_t offset,
-        const dynarr_t *const grid_layout, dynarr_t *const grid_spans);
-
-static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[]);
 
 
 void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_area)
@@ -244,6 +179,23 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
         dynarr_get(grid->spans, grid->columns));
 
     adjust_scroll_position(grid, 0);
+}
+
+
+static void unwrap_opts(dynarr_t **const grid_layout, grid_layout_t *opts, const size_t amount)
+{
+    size_t rept = 0;
+    for (size_t c = 0; c < amount; ++c)
+    {
+        assert(0 < opts->amount);
+        if (opts->amount == rept)
+        {
+            rept = 0;
+            ++opts;
+        }
+        ++rept;
+        dynarr_append(grid_layout, opts);
+    }
 }
 
 
@@ -337,3 +289,54 @@ static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[])
 }
 
 
+static grid_area_t *find_hovered_area(dynarr_t *const areas, const disp_pos_t pos)
+{
+    const size_t areas_amount = dynarr_size(areas);
+    for (size_t i = 0; i < areas_amount; ++i)
+    {
+        grid_area_t *area = dynarr_get(areas, i);
+
+        if (pos.x >= area->area.first.x && pos.x <= area->area.second.x
+          && pos.y >= area->area.first.y && pos.y <= area->area.second.y)
+        {
+            return area;
+        }
+    }
+    return NULL;
+}
+
+
+static void adjust_scroll_position(grid_t *const grid, const size_t limit)
+{
+    // CACHE? or maybe use last_hovered 
+    const size_t valid_areas = count_valid_areas(grid->areas);
+    const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
+
+    if (grid->scroll_offset >= max_scroll_offset)
+    {
+        grid->scroll_offset = max_scroll_offset;
+        return;
+    }
+}
+
+
+static size_t count_valid_areas(const dynarr_t *const areas)
+{
+    size_t count = 0;
+    dynarr_foreach(areas, valid_area_count, &count);
+    return count;
+}
+
+/*
+* 'count_valid_areas' helper
+* 'dynarr_foreach' callback
+*/
+static int valid_area_count(const void *const element, void *const param)
+{
+    size_t *count = param;
+    const grid_area_t *area = element;
+
+    if (! IS_INVALID_AREA(&area->area)) { ++*count; }
+
+    return 0;
+}
