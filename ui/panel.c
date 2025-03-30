@@ -8,58 +8,35 @@
 
 #define MIN_PANEL_SIZE 2
 
-static void
-centralize_vertical(unsigned int vertical_size,
-                    unsigned int vmax,
-                    disp_area_t *panel_area,
-                    disp_area_t *bounds);
-static void
-centralize_horizontal(unsigned int horizontal_size,
-                      unsigned int hmax,
-                      disp_area_t *panel_area,
-                      disp_area_t *bounds);
-static void
-dock_to_top(unsigned int vertical_size,
-            unsigned int vmax,
-            disp_area_t *panel_area,
-            disp_area_t *bounds);
-static void
-dock_to_bot(unsigned int vertical_size,
-            unsigned int vmax,
-            disp_area_t *panel_area,
-            disp_area_t *bounds);
-static void
-dock_to_left(unsigned int horizontal_size,
-             unsigned int hmax,
-             disp_area_t *panel_area,
-             disp_area_t *bounds);
-static void
-dock_to_right(unsigned int horizontal_size,
-              unsigned int hmax,
-              disp_area_t *panel_area,
-              disp_area_t *bounds);
-static void
-fill_vertical(disp_area_t *panel_area,
-              disp_area_t *bounds);
-static void
-fill_horizontal(disp_area_t *panel_area,
-                disp_area_t *bounds);
+static void centralize_vertical(unsigned int vertical_size,
+        unsigned int vmax, disp_area_t *panel_area, disp_area_t *bounds);
 
-static disp_area_t
-calc_panel_area(const panel_layout_t *const layout,
-                disp_area_t *const bounds);
-static void
-panel_draw_title(const panel_t *panel,
-                 display_t *const display)
-{
-    disp_area_t title_area = panel->area;
-    title_area.second.y = title_area.first.y;
-    display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
-}
+static void centralize_horizontal(unsigned int horizontal_size,
+        unsigned int hmax, disp_area_t *panel_area, disp_area_t *bounds);
+
+static void dock_to_top(unsigned int vertical_size, unsigned int vmax,
+        disp_area_t *panel_area, disp_area_t *bounds);
+
+static void dock_to_bot(unsigned int vertical_size, unsigned int vmax,
+        disp_area_t *panel_area, disp_area_t *bounds);
+
+static void dock_to_left(unsigned int horizontal_size, unsigned int hmax,
+        disp_area_t *panel_area, disp_area_t *bounds);
+
+static void dock_to_right(unsigned int horizontal_size, unsigned int hmax,
+        disp_area_t *panel_area, disp_area_t *bounds);
+
+static void fill_vertical(disp_area_t *panel_area, disp_area_t *bounds);
+
+static void fill_horizontal(disp_area_t *panel_area, disp_area_t *bounds);
+
+static disp_area_t calc_panel_area(const panel_layout_t *const layout,
+        disp_area_t *const bounds);
+
+static void panel_draw_title(const panel_t *panel, display_t *const display);
 
 
-void panel_init(panel_t *const panel,
-                const panel_opts_t *const opts)
+void panel_init(panel_t *const panel, const panel_opts_t *const opts)
 {
     assert(panel);
     assert(opts);
@@ -114,8 +91,7 @@ void panel_deinit(panel_t *const panel)
 }
 
 
-void panel_recalculate_layout(panel_t *panel,
-                              disp_area_t *const bounds)
+void panel_recalculate_layout(panel_t *panel, disp_area_t *const bounds)
 {
     panel->area = calc_panel_area(&panel->layout, bounds);
 
@@ -132,8 +108,7 @@ void panel_recalculate_layout(panel_t *panel,
 }
 
 
-void panel_render(const panel_t *panel,
-                  display_t *const display)
+void panel_render(const panel_t *panel, display_t *const display)
 {
     assert(panel);
 
@@ -197,9 +172,7 @@ void panel_set_data_source(panel_t *const panel, void *data_source, area_render_
 }
 
 
-static disp_area_t
-calc_panel_area(const panel_layout_t *const layout,
-                disp_area_t *const bounds)
+static disp_area_t calc_panel_area(const panel_layout_t *const layout, disp_area_t *const bounds)
 {
     unsigned int horizontal_size = bounds->second.x - bounds->first.x + 1;
     unsigned int vertical_size = bounds->second.y - bounds->first.y + 1;
@@ -273,11 +246,9 @@ calc_panel_area(const panel_layout_t *const layout,
     return panel_area;
 }
 
-static void
-centralize_vertical(unsigned int vertical_size,
-                    unsigned int vmax,
-                    disp_area_t *panel_area,
-                    disp_area_t *bounds)
+
+static void centralize_vertical(unsigned int vertical_size,
+        unsigned int vmax, disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.y = bounds->first.y;
     panel_area->second.y = bounds->second.y;
@@ -291,11 +262,9 @@ centralize_vertical(unsigned int vertical_size,
     }
 }
 
-static void
-centralize_horizontal(unsigned int horizontal_size,
-                      unsigned int hmax,
-                      disp_area_t *panel_area,
-                      disp_area_t *bounds)
+
+static void centralize_horizontal(unsigned int horizontal_size,
+        unsigned int hmax, disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.x = bounds->first.x;
     panel_area->second.x = bounds->second.x;
@@ -309,11 +278,9 @@ centralize_horizontal(unsigned int horizontal_size,
     }
 }
 
-static void
-dock_to_top(unsigned int vertical_size,
-            unsigned int vmax,
-            disp_area_t *panel_area,
-            disp_area_t *bounds)
+
+static void dock_to_top(unsigned int vertical_size, unsigned int vmax,
+            disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.y = bounds->first.y;
     vmax = (vertical_size > vmax) ? vmax : vertical_size;
@@ -321,11 +288,9 @@ dock_to_top(unsigned int vertical_size,
     bounds->first.y = panel_area->second.y + 1;
 }
 
-static void
-dock_to_bot(unsigned int vertical_size,
-            unsigned int vmax,
-            disp_area_t *panel_area,
-            disp_area_t *bounds)
+
+static void dock_to_bot(unsigned int vertical_size, unsigned int vmax,
+        disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->second.y = bounds->second.y;
     vmax = (vertical_size > vmax) ? vmax : vertical_size;
@@ -333,11 +298,9 @@ dock_to_bot(unsigned int vertical_size,
     bounds->second.y = panel_area->first.y - 1;
 }
 
-static void
-dock_to_left(unsigned int horizontal_size,
-             unsigned int hmax,
-             disp_area_t *panel_area,
-             disp_area_t *bounds)
+
+static void dock_to_left(unsigned int horizontal_size, unsigned int hmax,
+        disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.x = bounds->first.x;
     hmax = (horizontal_size > hmax) ? hmax : horizontal_size;
@@ -345,11 +308,9 @@ dock_to_left(unsigned int horizontal_size,
     bounds->first.x = panel_area->second.x + 1;
 }
 
-static void
-dock_to_right(unsigned int horizontal_size,
-              unsigned int hmax,
-              disp_area_t *panel_area,
-              disp_area_t *bounds)
+
+static void dock_to_right(unsigned int horizontal_size, unsigned int hmax,
+        disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->second.x = bounds->second.x;
     hmax = (horizontal_size > hmax) ? hmax : horizontal_size;
@@ -357,18 +318,26 @@ dock_to_right(unsigned int horizontal_size,
     bounds->second.x = panel_area->first.x - 1;
 }
 
-static void
-fill_vertical(disp_area_t *panel_area,
-              disp_area_t *bounds)
+
+static void fill_vertical(disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.y = bounds->first.y;
     panel_area->second.y = bounds->second.y;
 }
 
-static void
-fill_horizontal(disp_area_t *panel_area,
-                disp_area_t *bounds)
+
+static void fill_horizontal(disp_area_t *panel_area, disp_area_t *bounds)
 {
     panel_area->first.x = bounds->first.x;
     panel_area->second.x = bounds->second.x;
 }
+
+
+static void panel_draw_title(const panel_t *panel, display_t *const display)
+{
+    disp_area_t title_area = panel->area;
+    title_area.second.y = title_area.first.y;
+    display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
+}
+
+
