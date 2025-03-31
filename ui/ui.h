@@ -3,6 +3,7 @@
 
 #include "input.h"
 #include "sparse.h"
+#include "logger.h"
 #include "panel_factory.h"
 
 typedef struct
