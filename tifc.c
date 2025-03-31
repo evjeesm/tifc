@@ -1,9 +1,10 @@
 #include "tifc.h"
 #include "border.h"
 #include "display.h"
-#include "grid.h"
+#include "grid_panel.h"
 #include "layout.h"
 #include "panel.h"
+#include "panel_factory.h"
 #include "ui.h"
 
 #include <locale.h>
@@ -37,7 +38,7 @@ void tifc_render(tifc_t *const tifc)
     display_render(&tifc->display);
 }
 
-
+panel_factory_t g_factory = {0};
 size_t g_array [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 void size_t_array_render(display_t *const display, const grid_area_t *const area,
@@ -83,14 +84,20 @@ size_t g_array_amount(const void *const source)
 
 void tifc_create_ui_layout(tifc_t *const tifc)
 {
-    panel_opts_t *list_opts = &(panel_opts_t)
-    {
-        .title = "list of size_t",
-        .layout = {
-            .align = LAYOUT_ALIGN_LEFT,
-            .size_method = LAYOUT_SIZE_RELATIVE,
-            .size = {.x = 30},
+    grid_panel_opts_t *list_opts = &(grid_panel_opts_t){
+        .panel = {
+            .ifce = grid_panel_get_interface(),
+            .title = "list of size_t",
+            .layout = {
+                .align = LAYOUT_ALIGN_LEFT,
+                .size_method = LAYOUT_SIZE_RELATIVE,
+                .size = {.x = 30},
         },
+        .scrollable = true,
+        },
+        .data_source = g_array,
+        .data_get_amount = g_array_amount,
+        .data_render = size_t_array_render,
         .columns = 1,
         .column_layout = (grid_layout_t[]){
             {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
@@ -112,55 +119,12 @@ void tifc_create_ui_layout(tifc_t *const tifc)
             {{0, 0}, {8, 8}},
             {{0, 0}, {9, 9}},
             {{0, 0}, {10, 10}},
-        },
-        .data_source = g_array,
-        .data_get_amount = g_array_amount,
-        .data_render = size_t_array_render,
-        .scrollable = true,
+        }
     };
-    (void) ui_add_panel(&tifc->ui, list_opts);
+    panel_factory_init(&g_factory, list_opts, sizeof(*list_opts));
+    (void) ui_add_panel(&tifc->ui, &g_factory);
 
-    panel_opts_t *opts = &(panel_opts_t)
-    {
-        .title = "---",
-        .layout = {
-            .align = LAYOUT_ALIGN_RIGHT,
-            .size_method = LAYOUT_SIZE_RELATIVE,
-            .size = {.x = 100},
-        },
-        .columns = 1,
-        .column_layout = (grid_layout_t[]){
-            {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
-        },
-        .rows = 1,
-        .row_layout = (grid_layout_t[]){
-            {.amount = 1, .size = 100, .size_method = LAYOUT_SIZE_RELATIVE},
-        },
-        .areas = 1,
-        .areas_layout = (grid_area_opts_t[]){
-            {{0, 0}, {0, 0}},
-        },
-        .data_render = default_render,
-    };
-    (void) ui_add_panel(&tifc->ui, opts);
-
-
-    // opts->title = "left";
-    // opts->layout.align = LAYOUT_ALIGN_LEFT;
-    // opts->layout.size.x = 50;
-    // (void) ui_add_panel(&tifc->ui, opts);
-    //
-    // opts->title = "right-top";
-    // opts->layout.align = LAYOUT_ALIGN_TOP;
-    // opts->layout.size.y = 50;
-    // (void) ui_add_panel(&tifc->ui, opts);
-    //
-    // opts->title = "right-bot";
-    // opts->layout.align = LAYOUT_ALIGN_BOT;
-    // opts->layout.size.y = 100;
-    // (void) ui_add_panel(&tifc->ui, opts);
-
-    ui_recalculate_layout(&tifc->ui, &tifc->display);
+    ui_recalculate(&tifc->ui, &tifc->display);
 }
 
 int tifc_event_loop(void)
@@ -189,6 +153,7 @@ int tifc_event_loop(void)
     }
 
     tifc_deinit(&tifc);
+    panel_factory_deinit(&g_factory);
     return exit_status;
 }
 

@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "panel.h"
 #include "display.h"
+#include "panel_factory.h"
 #include "sparse.h"
 
 #include <string.h>
@@ -36,15 +37,16 @@ static input_hooks_t hooks_init(void)
 
 ui_t ui_init(void)
 {
+    /* this will contain a references to panel objects */
     sparse_t *panels = sparse_create(
-        .element_size = sizeof(panel_t)
+        .element_size = sizeof(panel_t*)
     );
 
     if (!panels)
     {
         exit(EXIT_FAILURE);
     }
-    
+
     return (ui_t) {
         .panels = panels,
         .hooks = hooks_init(),
@@ -56,7 +58,7 @@ void ui_deinit(ui_t *const ui)
     sparse_destroy(ui->panels);
 }
 
-void ui_recalculate_layout(ui_t *const ui, const display_t *const display)
+void ui_recalculate(ui_t *const ui, const display_t *const display)
 {
     disp_area_t bounds = {
         .first = {0, 0},
@@ -65,17 +67,17 @@ void ui_recalculate_layout(ui_t *const ui, const display_t *const display)
     size_t size = sparse_size(ui->panels);
     for (size_t i = 0; i < size; ++i)
     {
-        panel_t *panel = sparse_get(ui->panels, i);
+        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
         if (panel)
         {
-            panel_recalculate_layout(panel, &bounds);
+            panel_recalculate(panel, &bounds);
         }
     }
 }
 
 void ui_resize_hook(const display_t *const display, void *data)
 {
-    ui_recalculate_layout((ui_t*)data, display);
+    ui_recalculate((ui_t*)data, display);
 }
 
 void ui_render(const ui_t *const ui,
@@ -84,7 +86,7 @@ void ui_render(const ui_t *const ui,
     size_t size = sparse_size(ui->panels);
     for (size_t i = 0; i < size; ++i)
     {
-        panel_t *panel = sparse_get(ui->panels, i);
+        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
         if (panel)
         {
             panel_render(panel, display);
@@ -92,12 +94,11 @@ void ui_render(const ui_t *const ui,
     }
 }
 
-panel_t *ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
+panel_t *ui_add_panel(ui_t *const ui, panel_factory_t *const pf)
 {
     const size_t new_panel_index = sparse_last_free_index(ui->panels);
-    (void) sparse_insert_reserve(&ui->panels, new_panel_index);
-    panel_t *panel = sparse_get(ui->panels, new_panel_index);
-    panel_init(panel, opts);
+    panel_t *panel = panel_factory_create(pf);
+    sparse_insert(&ui->panels, new_panel_index, &panel);
     return panel;
 }
 
@@ -107,7 +108,7 @@ static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos)
     const size_t size = sparse_size(ui->panels);
     for (size_t i = 0; i < size; ++i)
     {
-        panel_t *panel = sparse_get(ui->panels, i);
+        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
         if (pos.x >= panel->area.first.x && pos.x <= panel->area.second.x
             && pos.y >= panel->area.first.y && pos.y <= panel->area.second.y)
         {

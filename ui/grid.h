@@ -3,7 +3,6 @@
 
 #include "dynarr.h"
 #include "layout.h"
-#include "logger.h"
 #include "display.h"
 
 #include <stdint.h>

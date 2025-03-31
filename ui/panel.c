@@ -1,7 +1,7 @@
 #include "panel.h"
 #include "display.h"
-#include "grid.h"
 #include "layout.h"
+#include "panel_interface.h"
 
 #include <assert.h>
 #include <string.h>
@@ -40,54 +40,36 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
 {
     assert(panel);
     assert(opts);
-    assert((opts->columns == 0 && opts->rows == 0)   // both zero or nether one is
-        || (opts->columns != 0 && opts->rows != 0));
+
+    // assert((opts->columns == 0 && opts->rows == 0)   // both zero or nether one is
+    //     || (opts->columns != 0 && opts->rows != 0));
 
     *panel = (panel_t){
+        .ifce = opts->ifce,
         .title = opts->title,
         .title_size = strlen(opts->title),
         .layout = opts->layout,
         .area = INVALID_AREA,
-        .content_type = (opts->columns == 0 && opts->rows == 0)
-            ? PANEL_CONTENT_TYPE_RAW
-            : PANEL_CONTENT_TYPE_GRID,
-        .data_source = opts->data_source,
-        .data_get_amount = opts->data_get_amount,
-        .data_render = opts->data_render,
     };
 
-    // GRID CONTENT:
-    grid_init(&panel->content.grid,
-        opts->columns,
-        opts->rows,
-        opts->column_layout,
-        opts->row_layout);
-    
-    // set grid to scollable 
-    panel->content.grid.is_scrollable = opts->scrollable;
-
-    for (size_t a = 0; a < opts->areas; ++a)
-    {
-        grid_add_area(&panel->content.grid, &opts->areas_layout[a]);
-    }
+    panel->ifce.init(panel, (void*)opts);
 }
 
 
 void panel_deinit(panel_t *const panel)
 {
     assert(panel);
-    grid_deinit(&panel->content.grid);
+    panel->ifce.deinit(panel);
 }
 
 
-void panel_recalculate_layout(panel_t *panel, disp_area_t *const bounds)
+void panel_recalculate(panel_t *panel, disp_area_t *const bounds)
 {
     panel->area = calc_panel_area(&panel->layout, bounds);
 
     if (IS_INVALID_AREA(&panel->area)) return;
 
-    // GRID:
-    grid_recalculate_layout(&panel->content.grid, &panel->area); // TODO
+    panel->ifce.recalculate(panel, bounds);
 }
 
 
@@ -104,37 +86,19 @@ void panel_render(const panel_t *panel, display_t *const display)
     // display_fill_area(display, panel->style, panel_area);
     panel_draw_title(panel, display);
 
-    size_t amount = 0;
-    if (panel->data_source)
-    { 
-        amount = panel->data_get_amount(panel->data_source);
-    }
-    grid_render(&panel->content.grid, display, panel->data_source, amount, panel->data_render);
+    panel->ifce.render(panel, display);
 }
 
 
 void panel_hover(panel_t *const panel, const disp_pos_t pos)
 {
-    grid_hover(&panel->content.grid, pos);
+    panel->ifce.hover(panel, pos);
 }
 
 
 void panel_scroll(panel_t *const panel, const int direction)
 {
-    size_t amount = 0;
-    if (panel->data_source)
-    { 
-        amount = panel->data_get_amount(panel->data_source);
-    }
-    grid_scroll(&panel->content.grid, direction, amount);
-}
-
-
-void panel_set_data_source(panel_t *const panel, void *data_source, area_render_t data_render)
-{
-    assert(panel);
-    panel->data_source = data_source;
-    panel->data_render = data_render;
+    panel->ifce.scroll(panel, direction);
 }
 
 

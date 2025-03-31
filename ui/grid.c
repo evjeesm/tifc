@@ -4,6 +4,7 @@
 #include "display_types.h"
 #include "dynarr.h"
 #include "layout.h"
+#include "logger.h"
 #include "input.h"
 
 #include <assert.h>
