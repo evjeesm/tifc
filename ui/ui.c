@@ -58,7 +58,8 @@ void ui_deinit(ui_t *const ui)
     const size_t panels_amount = sparse_size(ui->panels);
     for (size_t i = 0; i < panels_amount; ++i)
     {
-        panel_deinit(*(panel_t**)sparse_get(ui->panels, i));
+        panel_t **p = (panel_t**)sparse_get(ui->panels, i);
+        panel_deinit(*p);
     }
     sparse_destroy(ui->panels);
 }

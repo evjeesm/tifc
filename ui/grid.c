@@ -35,28 +35,24 @@ void grid_init(grid_t *const grid, uint8_t columns, uint8_t rows,
     assert(column_layout);
     assert(row_layout);
 
-    grid->columns = columns;
-    grid->rows = rows;
-
-    grid->layout = dynarr_create
-        (
+    *grid = (grid_t) {
+        .columns = columns,
+        .rows = rows,
+        .layout = dynarr_create (
             .element_size = sizeof(grid_layout_t),
             .initial_cap = columns + rows,
-        );
-
-    grid->spans = dynarr_create
-        (
+        ),
+        .spans = dynarr_create (
             .element_size = sizeof(span_t),
             .initial_cap = columns + rows,
-        );
+        ),
+        .areas = dynarr_create (
+            .element_size = sizeof(grid_area_t),
+        ),
+    };
 
     // TODO: should implement reserve range for dynarr
     dynarr_spread_insert(&grid->spans, 0, columns + rows, TMP_REF(span_t, 0));
-
-    grid->areas = dynarr_create (
-        .element_size = sizeof(grid_area_t),
-    );
-
     unwrap_opts(&grid->layout, column_layout, columns);
     unwrap_opts(&grid->layout, row_layout, rows);
 }
