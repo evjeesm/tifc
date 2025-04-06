@@ -284,7 +284,7 @@ static void set_border(display_t *const display, wchar_t border_char, disp_pos_t
 
 void display_erase(void)
 {
-    printf(CLEAR);
+    printf(HOME CLEAR);
 }
 
 
