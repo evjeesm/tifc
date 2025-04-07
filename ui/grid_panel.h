@@ -27,7 +27,7 @@ typedef struct
 }
 grid_panel_opts_t;
 
-panel_interface_t grid_panel_get_interface(void);
+panel_interface_t grid_panel_get_impl(void);
 
 
 #endif/*_GRID_PANEL_H_*/

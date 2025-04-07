@@ -41,9 +41,6 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
     assert(panel);
     assert(opts);
 
-    // assert((opts->columns == 0 && opts->rows == 0)   // both zero or nether one is
-    //     || (opts->columns != 0 && opts->rows != 0));
-
     *panel = (panel_t){
         .ifce = opts->ifce,
         .title = opts->title,

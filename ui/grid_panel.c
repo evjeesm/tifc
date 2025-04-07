@@ -22,7 +22,7 @@ static void grid_panel_hover(panel_t *const panel, const disp_pos_t pos);
 static void grid_panel_scroll(panel_t *const panel, const int dir);
 
 
-panel_interface_t grid_panel_get_interface(void)
+panel_interface_t grid_panel_get_impl(void)
 {
     return (panel_interface_t) {
         .alloc = grid_panel_alloc,

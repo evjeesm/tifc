@@ -86,7 +86,7 @@ void tifc_create_ui_layout(tifc_t *const tifc)
 {
     grid_panel_opts_t *list_opts = &(grid_panel_opts_t){
         .panel = {
-            .ifce = grid_panel_get_interface(),
+            .ifce = grid_panel_get_impl(),
             .title = "list of size_t",
             .layout = {
                 .align = LAYOUT_ALIGN_LEFT,
