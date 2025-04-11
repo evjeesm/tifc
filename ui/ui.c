@@ -1,13 +1,9 @@
 #include "ui.h"
+#include "display_types.h"
 #include "logger.h"
 #include "panel.h"
 #include "display.h"
-#include "panel_factory.h"
-#include "sparse.h"
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "panel_manager.h"
 
 //
 // Mouse events
@@ -19,7 +15,8 @@ static void on_drag_begin(const mouse_event_t *const, void *const);
 static void on_drag(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_scroll(const mouse_event_t *const, void *const);
-static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos);
+static panel_t *ui_peek_panel(ui_t *const ui, const disp_pos_t pos);
+
 
 static input_hooks_t hooks_init(void)
 {
@@ -35,93 +32,68 @@ static input_hooks_t hooks_init(void)
     };
 }
 
+
 ui_t ui_init(void)
 {
-    /* this will contain a references to panel objects */
-    sparse_t *panels = sparse_create(
-        .element_size = sizeof(panel_t*)
-    );
-
-    if (!panels)
-    {
-        exit(EXIT_FAILURE);
-    }
-
-    return (ui_t) {
-        .panels = panels,
+    ui_t ui = {
         .hooks = hooks_init(),
     };
+    pm_init(&ui.pm);
+    return ui;
 }
+
 
 void ui_deinit(ui_t *const ui)
 {
-    const size_t panels_amount = sparse_size(ui->panels);
-    for (size_t i = 0; i < panels_amount; ++i)
-    {
-        panel_t **p = (panel_t**)sparse_get(ui->panels, i);
-        panel_deinit(*p);
-    }
-    sparse_destroy(ui->panels);
+    assert(ui);
+    pm_deinit(&ui->pm);
 }
+
 
 void ui_recalculate(ui_t *const ui, const display_t *const display)
 {
+    assert(ui);
+    assert(display);
+
     disp_area_t bounds = {
         .first = {0, 0},
         .second = {display->size.x - 1, display->size.y - 1}
     };
-    size_t size = sparse_size(ui->panels);
-    for (size_t i = 0; i < size; ++i)
-    {
-        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
-        if (panel)
-        {
-            panel_recalculate(panel, &bounds);
-        }
-    }
+    pm_recalculate(&ui->pm, &bounds);
 }
+
 
 void ui_resize_hook(const display_t *const display, void *data)
 {
+    assert(display);
+    assert(data);
+
     ui_recalculate((ui_t*)data, display);
 }
+
 
 void ui_render(const ui_t *const ui,
                display_t *const display)
 {
-    size_t size = sparse_size(ui->panels);
-    for (size_t i = 0; i < size; ++i)
-    {
-        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
-        if (panel)
-        {
-            panel_render(panel, display);
-        }
-    }
-}
+    assert(ui);
+    assert(display);
 
-panel_t *ui_add_panel(ui_t *const ui, panel_factory_t *const pf)
-{
-    const size_t new_panel_index = sparse_last_free_index(ui->panels);
-    panel_t *panel = panel_factory_create(pf);
-    sparse_insert(&ui->panels, new_panel_index, &panel);
-    return panel;
+    pm_render(&ui->pm, display);
 }
 
 
-static panel_t *ui_get_hovered_panel(ui_t *const ui, const disp_pos_t pos)
+void ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
 {
-    const size_t size = sparse_size(ui->panels);
-    for (size_t i = 0; i < size; ++i)
-    {
-        panel_t *panel = *(panel_t**)sparse_get(ui->panels, i);
-        if (pos.x >= panel->area.first.x && pos.x <= panel->area.second.x
-            && pos.y >= panel->area.first.y && pos.y <= panel->area.second.y)
-        {
-            return panel;
-        }
-    }
-    return NULL;
+    assert(ui);
+    assert(opts);
+
+    pm_add_panel(&ui->pm, opts);
+}
+
+
+static panel_t *ui_peek_panel(ui_t *const ui, const disp_pos_t pos)
+{
+    return pm_peek_panel(&ui->pm, pos);
 }
 
 
@@ -133,10 +105,11 @@ static void on_hover(const mouse_event_t *const hover, void *const param)
 
     /* zero based position */
     disp_pos_t norm_pos = {hover->position.x - 1, hover->position.y - 1};
-    panel_t *panel = ui_get_hovered_panel(ui, norm_pos);
+    panel_t *panel = ui_peek_panel(ui, norm_pos);
     if (!panel) { return; }
     panel_hover(panel, norm_pos);
 }
+
 
 static void on_press(const mouse_event_t *const press, void *const param)
 {
@@ -145,12 +118,14 @@ static void on_press(const mouse_event_t *const press, void *const param)
         press->mouse_button, press->position.x, press->position.y);
 }
 
+
 static void on_release(const mouse_event_t *const press, void *const param)
 {
     (void) param;
     S_LOG(LOGGER_DEBUG, "UI::release %d, at %u, %u\n",
         press->mouse_button, press->position.x, press->position.y);
 }
+
 
 static void on_drag_begin(const mouse_event_t *const begin,
         void *const param)
@@ -160,12 +135,14 @@ static void on_drag_begin(const mouse_event_t *const begin,
         begin->mouse_button, begin->position.x, begin->position.y);
 }
 
+
 static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param)
 {
     (void) param;
     S_LOG(LOGGER_DEBUG, "UI::drag %d drag moving to %u, %u\n",
         begin->mouse_button, moved->position.x, moved->position.y);
 }
+
 
 static void on_drag_end(const mouse_event_t *const begin,
         const mouse_event_t *const end, void *const param)
@@ -177,6 +154,7 @@ static void on_drag_end(const mouse_event_t *const begin,
         end->position.x, end->position.y);
 }
 
+
 static void on_scroll(const mouse_event_t *const scroll, void *const param)
 {
     ui_t *ui = param;
@@ -186,7 +164,7 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
 
     /* zero based position */
     disp_pos_t norm_pos = {scroll->position.x - 1, scroll->position.y - 1};
-    panel_t *panel = ui_get_hovered_panel(ui, norm_pos);
+    panel_t *panel = ui_peek_panel(ui, norm_pos);
 
     if (!panel) { return; }
 

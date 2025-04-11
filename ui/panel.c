@@ -1,10 +1,9 @@
 #include "panel.h"
 #include "display.h"
+#include "interior.h"
 #include "layout.h"
-#include "panel_interface.h"
 
 #include <assert.h>
-#include <string.h>
 
 #define MIN_PANEL_SIZE 2
 
@@ -33,7 +32,7 @@ static void fill_horizontal(disp_area_t *panel_area, disp_area_t *bounds);
 static disp_area_t calc_panel_area(const panel_layout_t *const layout,
         disp_area_t *const bounds);
 
-static void panel_draw_title(const panel_t *panel, display_t *const display);
+// static void panel_draw_title(const panel_t *panel, display_t *const display);
 
 
 void panel_init(panel_t *const panel, const panel_opts_t *const opts)
@@ -42,21 +41,20 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
     assert(opts);
 
     *panel = (panel_t){
-        .ifce = opts->ifce,
-        .title = opts->title,
-        .title_size = strlen(opts->title),
         .layout = opts->layout,
         .area = INVALID_AREA,
+        .interior = interior_alloc(opts->interior_opts),
     };
 
-    panel->ifce.init(panel, (void*)opts);
+    interior_init(panel->interior, opts->interior_opts);
 }
 
 
 void panel_deinit(panel_t *const panel)
 {
     assert(panel);
-    panel->ifce.deinit(panel);
+
+    interior_deinit(panel->interior);
 }
 
 
@@ -66,7 +64,7 @@ void panel_recalculate(panel_t *panel, disp_area_t *const bounds)
 
     if (IS_INVALID_AREA(&panel->area)) return;
 
-    panel->ifce.recalculate(panel, bounds);
+    interior_recalculate(panel->interior, &panel->area);
 }
 
 
@@ -77,25 +75,25 @@ void panel_render(const panel_t *panel, display_t *const display)
     // dont render panel if has no valid area
     if (IS_INVALID_AREA(&panel->area)) return;
 
-    disp_area_t panel_area = panel->area;
-    border_set_t border = {._ = L"╭╮╯╰│─"};
-    display_draw_border(display, panel->style, border, panel_area);
+    // disp_area_t panel_area = panel->area;
+    // border_set_t border = {._ = L"╭╮╯╰│─"};
+    // display_draw_border(display, panel->style, border, panel_area);
     // display_fill_area(display, panel->style, panel_area);
-    panel_draw_title(panel, display);
+    // panel_draw_title(panel, display);
 
-    panel->ifce.render(panel, display);
+    interior_render(panel->interior, display);
 }
 
 
 void panel_hover(panel_t *const panel, const disp_pos_t pos)
 {
-    panel->ifce.hover(panel, pos);
+    interior_hover(panel->interior, pos);
 }
 
 
 void panel_scroll(panel_t *const panel, const int direction)
 {
-    panel->ifce.scroll(panel, direction);
+    interior_scroll(panel->interior, direction);
 }
 
 
@@ -260,11 +258,11 @@ static void fill_horizontal(disp_area_t *panel_area, disp_area_t *bounds)
 }
 
 
-static void panel_draw_title(const panel_t *panel, display_t *const display)
-{
-    disp_area_t title_area = panel->area;
-    title_area.second.y = title_area.first.y;
-    display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
-}
+// static void panel_draw_title(const panel_t *panel, display_t *const display)
+// {
+//     disp_area_t title_area = panel->area;
+//     title_area.second.y = title_area.first.y;
+//     // display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
+// }
 
 

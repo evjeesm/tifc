@@ -1,4 +1,5 @@
 #include "interior_layout.h"
+#include "display_types.h"
 #include "dynarr.h"
 #include "logger.h"
 
@@ -6,48 +7,53 @@
 
 #define MIN_LAYOUT_AREA_SIZE 1
 
-static void unwrap_opts(dynarr_t **const layout, layout_def_t *defs, const size_t amount);
+static void unwrap_opts(dynarr_t **const layout, counted_layout_def_t *defs, const size_t amount);
 
 static void calculate_spans(size_t start_offset, size_t length,
         const size_t spans_amount, const size_t offset,
         const dynarr_t *const layout, dynarr_t *const spans);
 
 static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[]);
-static size_t count_valid_areas(const dynarr_t *const areas);
 static int valid_area_count(const void *const element, void *const param);
 
 
 void interior_layout_init(interior_layout_t *const layout,
-        uint8_t columns, layout_def_t *column_layout, 
-        uint8_t rows, layout_def_t *row_layout)
+        const interior_layout_opts_t *const opts)
 {
     assert(layout);
-    assert(columns > 0);
-    assert(rows > 0);
-    assert(column_layout);
-    assert(row_layout);
+    assert(opts->columns > 0);
+    assert(opts->rows > 0);
+    assert(opts->columns_def);
+    assert(opts->rows_def);
 
     *layout = (interior_layout_t) {
-        .columns = columns,
-        .rows = rows,
-        .layout = dynarr_create (
+        .columns = opts->columns,
+        .rows = opts->rows,
+        .layout = dynarr_create(
             .element_size = sizeof(layout_def_t),
-            .initial_cap = columns + rows,
+            .initial_cap = opts->columns + opts->rows,
         ),
-        .spans = dynarr_create (
+        .spans = dynarr_create(
             .element_size = sizeof(span_t),
-            .initial_cap = columns + rows,
+            .initial_cap = opts->columns + opts->rows,
         ),
-        .areas = dynarr_create (
+        .areas = dynarr_create(
             .element_size = sizeof(interior_area_t),
         ),
     };
 
     // TODO: should implement reserve range for dynarr
-    dynarr_spread_insert(&layout->spans, 0, columns + rows, TMP_REF(span_t, 0));
+    dynarr_spread_insert(&layout->spans, 0,
+            opts->columns + opts->rows, TMP_REF(span_t, 0));
 
-    unwrap_opts(&layout->layout, column_layout, columns);
-    unwrap_opts(&layout->layout, row_layout, rows);
+    unwrap_opts(&layout->layout, opts->columns_def, opts->columns);
+    unwrap_opts(&layout->layout, opts->rows_def, opts->rows);
+
+    // add areas
+   for (size_t ai = 0; ai < opts->areas; ++ai)
+   {
+        interior_layout_add_area(layout, &opts->areas_def[ai]);
+   }
 }
 
 
@@ -61,7 +67,7 @@ void interior_layout_deinit(interior_layout_t *const layout)
 
 
 void interior_layout_add_area(interior_layout_t *const layout,
-        const interior_area_opts_t *const opts)
+        const interior_area_def_t *const opts)
 {
     assert(layout);
 
@@ -71,7 +77,7 @@ void interior_layout_add_area(interior_layout_t *const layout,
     assert(opts->row.end < layout->rows);
 
     interior_area_t area = {
-        .opts = *opts,
+        .def = *opts,
         .area = INVALID_AREA,
     };
     // implement reserve for dynarr ?
@@ -124,16 +130,42 @@ void interior_layout_recalculate(interior_layout_t *const layout,
 }
 
 
-/**
-* TODO: Silly termporary thing, why do we need to decompress opts that way?
-*       bad use of space since 'amount' was kept.
-*/
-static void unwrap_opts(dynarr_t **const layout, layout_def_t *defs, const size_t amount)
+size_t interior_layout_count_valid_areas(const interior_layout_t * const layout)
+{
+    size_t count = 0;
+    dynarr_foreach(layout->areas, valid_area_count, &count);
+    return count;
+}
+
+
+interior_area_t *interior_layout_peek_area(const interior_layout_t *const layout, const disp_pos_t pos)
+{
+    const size_t areas_amount = dynarr_size(layout->areas);
+    for (size_t ai = 0; ai < areas_amount; ++ai)
+    {
+        interior_area_t *area = dynarr_get(layout->areas, ai);
+
+        if (pos.x >= area->area.first.x && pos.x <= area->area.second.x
+          && pos.y >= area->area.first.y && pos.y <= area->area.second.y)
+        {
+            return area;
+        }
+    }
+    return NULL;
+}
+
+
+bool interior_area_is_visible(const interior_area_t *const area)
+{
+    return ! IS_INVALID_AREA(&area->area);
+}
+
+
+static void unwrap_opts(dynarr_t **const layout, counted_layout_def_t *defs, const size_t amount)
 {
     size_t rept = 0;
     for (size_t c = 0; c < amount; ++c)
     {
-        defs->amount = 0;
         assert(0 < defs->amount);
         if (defs->amount == rept)
         {
@@ -141,10 +173,10 @@ static void unwrap_opts(dynarr_t **const layout, layout_def_t *defs, const size_
             ++defs;
         }
         ++rept;
-        dynarr_append(layout, defs);
-        ((layout_def_t*)dynarr_last(*layout))->amount = 1;
+        dynarr_append(layout, &defs->layout);
     }
 }
+
 
 static void calculate_spans(size_t start_offset, size_t length,
         const size_t spans_amount, const size_t offset,
@@ -203,8 +235,8 @@ static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[])
     for (size_t i = 0; i < areas_amount; ++i)
     {
         interior_area_t *area = dynarr_get(areas, i);
-        const span_t *start_column = &columns[area->opts.column.start];
-        const span_t *start_row = &rows[area->opts.row.start];
+        const span_t *start_column = &columns[area->def.column.start];
+        const span_t *start_row = &rows[area->def.row.start];
 
         if (IS_INVALID_SPAN(start_column) || IS_INVALID_SPAN(start_row))
         {
@@ -213,11 +245,11 @@ static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[])
             continue;
         }
 
-        const size_t c_range = area->opts.column.end - area->opts.column.start;
+        const size_t c_range = area->def.column.end - area->def.column.start;
         const span_t *end_column = start_column;
         for (size_t i = 0; !IS_INVALID_SPAN(end_column) && i < c_range; ++end_column, ++i);
 
-        const size_t r_range = area->opts.row.end - area->opts.row.start;
+        const size_t r_range = area->def.row.end - area->def.row.start;
         const span_t *end_row = start_row;
         for (size_t i = 0; !IS_INVALID_SPAN(end_row) && i < r_range; ++end_row, ++i);
 
@@ -237,17 +269,8 @@ static void calc_areas(dynarr_t *const areas, span_t columns[], span_t rows[])
             area->area.second.x, area->area.second.x
         );
     }
-
-    (void) count_valid_areas; // FIXME:
 }
 
-
-static size_t count_valid_areas(const dynarr_t *const areas)
-{
-    size_t count = 0;
-    dynarr_foreach(areas, valid_area_count, &count);
-    return count;
-}
 
 /*
 * 'count_valid_areas' helper

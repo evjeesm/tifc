@@ -1,0 +1,53 @@
+#ifndef _INTERIOR_H_
+#define _INTERIOR_H_
+
+#include "arena.h"
+#include "display.h"
+#include "interior_layout.h"
+
+/*
+* This is a component of a panel that defines the inner content.
+*/
+
+typedef struct interior interior_t;
+
+typedef struct
+{
+    void *(*alloc) (Arena *arena);
+    void (*init) (interior_t *const interior, void *opts);
+    void (*deinit) (interior_t *const interior);
+    void (*recalculate) (interior_t *const interior, disp_area_t *const panel_area);
+    void (*render) (const interior_t *interior, display_t *const display);
+    void (*hover) (interior_t *const interior, const disp_pos_t pos);
+    void (*scroll) (interior_t *const interior, const int dir);
+    /* ... */
+}
+interior_interface_t;
+
+
+typedef struct
+{
+    interior_interface_t   impl;
+    Arena                  *arena;
+    interior_layout_opts_t layout;
+}
+interior_opts_t;
+
+
+struct interior
+{
+    interior_interface_t impl;
+    interior_layout_t    layout;
+    interior_area_t      *last_hovered;
+};
+
+
+interior_t *interior_alloc(const interior_opts_t *const opts);
+void interior_init(interior_t *const interior, const interior_opts_t *const opts);
+void interior_deinit(interior_t *const interior);
+void interior_render(const interior_t *interior, display_t *const display);
+void interior_recalculate(interior_t *interior, disp_area_t *const panel_area);
+void interior_hover(interior_t *const interior, const disp_pos_t pos);
+void interior_scroll(interior_t *const interior, const int direction);
+
+#endif/*_INTERIOR_H_*/

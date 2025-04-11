@@ -4,12 +4,13 @@
 #include "input.h"
 #include "sparse.h"
 #include "logger.h"
-#include "panel_factory.h"
+#include "panel_manager.h"
+#include "panel.h"
 
 typedef struct
 {
     input_hooks_t hooks;
-    sparse_t *panels;
+    panel_manager_t pm;
 }
 ui_t;
 
@@ -22,7 +23,7 @@ void ui_resize_hook(const display_t *const display, void *const data);
 
 void ui_render(const ui_t *const ui, display_t *const display);
 
-panel_t *ui_add_panel(ui_t *const ui, panel_factory_t *const pf);
+void ui_add_panel(ui_t *const ui, const panel_opts_t *const opts);
 
 
 #endif /* _UI_H_ */
