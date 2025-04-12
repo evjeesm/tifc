@@ -12,6 +12,17 @@
 
 typedef struct interior_area interior_area_t;
 
+
+typedef struct
+{
+    uint8_t left;
+    uint8_t top;
+    uint8_t right;
+    uint8_t bot;
+}
+padding_t;
+
+
 typedef struct interior_layout
 {
     /* TODO consider arena to store layouts and spans */
@@ -24,8 +35,10 @@ typedef struct interior_layout
         size will extend to `rows * columns` at max. */
     dynarr_t *areas;
 
-    uint8_t columns;
-    uint8_t rows;
+    uint16_t columns;
+    uint16_t rows;
+
+    padding_t padding;
 }
 interior_layout_t;
 
@@ -75,6 +88,7 @@ typedef struct
     counted_layout_def_t *columns_def;
     counted_layout_def_t *rows_def;
     interior_area_def_t  *areas_def;
+    padding_t padding;
 }
 interior_layout_opts_t;
 

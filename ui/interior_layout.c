@@ -40,6 +40,7 @@ void interior_layout_init(interior_layout_t *const layout,
         .areas = dynarr_create(
             .element_size = sizeof(interior_area_t),
         ),
+        .padding = opts->padding,
     };
 
     // TODO: should implement reserve range for dynarr
@@ -101,8 +102,8 @@ void interior_layout_recalculate(interior_layout_t *const layout,
     };
 
     /* subtracting panel's border */
-    const ssize_t width = panel_size.x - 2;
-    const ssize_t height = panel_size.y - 2;
+    const ssize_t width = panel_size.x - layout->padding.left - layout->padding.right;
+    const ssize_t height = panel_size.y - layout->padding.top - layout->padding.bot;
     assert(width >= 0);
     assert(height >= 0);
 
@@ -111,12 +112,12 @@ void interior_layout_recalculate(interior_layout_t *const layout,
         "\n==================\n");
 
     S_LOG(LOGGER_DEBUG, "Calculate columns:\n");
-    calculate_spans(panel_area->first.x + 1, width, layout->columns,
+    calculate_spans(panel_area->first.x + layout->padding.left, width, layout->columns,
             0 /* columns offset */,
             layout->layout, layout->spans);
 
     S_LOG(LOGGER_DEBUG, "Calculate rows:\n");
-    calculate_spans(panel_area->first.y + 1, height, layout->rows,
+    calculate_spans(panel_area->first.y + layout->padding.right, height, layout->rows,
             layout->columns /* rows offset */,
             layout->layout, layout->spans);
 
