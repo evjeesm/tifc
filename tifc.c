@@ -14,6 +14,7 @@
 
 tifc_t tifc_init(void)
 {
+    display_enter_alternate_screen();
     setlocale(LC_ALL, "");
     input_enable_mouse();
     tifc_t tifc = {
@@ -29,6 +30,7 @@ void tifc_deinit(tifc_t *const tifc)
     input_disable_mouse();
     input_deinit(&tifc->input);
     ui_deinit(&tifc->ui);
+    display_leave_alternate_screen();
 }
 
 

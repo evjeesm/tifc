@@ -28,6 +28,18 @@ static void resize_handler(int signo, siginfo_t *info, void *ctx)
 }
 
 
+void display_enter_alternate_screen(void)
+{
+    printf(ALTER_SCREEN);
+}
+
+
+void display_leave_alternate_screen(void)
+{
+    printf(NORMAL_SCREEN);
+}
+
+
 void display_set_resize_handler(display_t *const display, resize_hook_with_data_t resize_hook)
 {
     g_resize_handler.resize_hook = resize_hook;
@@ -48,7 +60,7 @@ void display_render(display_t *const display)
             .y = screen.y - 1
         }
     };
-    printf(SHOW_CURSOR);
+
     display_render_area(display, screen_area);
 
     fflush(stdout);

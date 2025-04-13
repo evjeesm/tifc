@@ -21,6 +21,9 @@
 #define SHOW_CURSOR ESC "[?25h"
 #define ERASE_LINE  ESC "[K"
 
+#define ALTER_SCREEN  ESC "[?1049h"
+#define NORMAL_SCREEN ESC "[?1049l"
+
 typedef struct
 {
     const char *seq;
@@ -50,6 +53,8 @@ typedef struct
 }
 resize_hook_with_data_t;
 
+void display_enter_alternate_screen(void);
+void display_leave_alternate_screen(void);
 
 void
 display_set_char(display_t *const display,
