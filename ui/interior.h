@@ -14,7 +14,7 @@ typedef struct interior interior_t;
 typedef struct
 {
     void *(*alloc) (Arena *arena);
-    void (*init) (interior_t *const interior, void *opts);
+    void (*init) (interior_t *const interior, void *opts, Arena *const arena);
     void (*deinit) (interior_t *const interior);
     void (*recalculate) (interior_t *const interior, disp_area_t *const panel_area);
     void (*render) (const interior_t *interior, display_t *const display);
@@ -28,7 +28,6 @@ interior_interface_t;
 typedef struct
 {
     interior_interface_t   impl;
-    Arena                  *arena;
     interior_layout_opts_t layout;
 }
 interior_opts_t;
@@ -42,12 +41,13 @@ struct interior
 };
 
 
-interior_t *interior_alloc(const interior_opts_t *const opts);
-void interior_init(interior_t *const interior, const interior_opts_t *const opts);
+interior_t *interior_alloc(const interior_opts_t *const opts, Arena *const arena);
+void interior_init(interior_t *const interior, const interior_opts_t *const opts, Arena *const arena);
 void interior_deinit(interior_t *const interior);
 void interior_render(const interior_t *interior, display_t *const display);
 void interior_recalculate(interior_t *interior, disp_area_t *const panel_area);
 void interior_hover(interior_t *const interior, const disp_pos_t pos);
 void interior_scroll(interior_t *const interior, const int direction);
+size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr);
 
 #endif/*_INTERIOR_H_*/

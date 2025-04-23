@@ -5,22 +5,33 @@
 #include "interior_layout.h"
 #include "input.h"
 
+/*
+* Contains only view extention members,
+* allows for designated initialization
+**/
+typedef struct
+{
+    data_source_t source;
+    size_t scroll_offset;
+}
+view_interior_slice_t;
+
+/* compound of base interior and view */
 struct view_interior
 {
     interior_t interior;
-    data_source_t source;
-    size_t scroll_offset;
+    view_interior_slice_t view;
 };
 
 static void *view_interior_alloc(Arena *arena);
-static void view_interior_init(interior_t *const interior, void *opts);
-static void view_interior_deinit(interior_t *const interior);
-static void view_interior_recalculate(interior_t *const interior, disp_area_t *const panel_area);
-static void view_interior_render(const interior_t *interior, display_t *const display);
-static void view_interior_hover(interior_t *const interior, const disp_pos_t pos);
-static void view_interior_scroll(interior_t *const interior, const int dir);
+static void view_interior_init(interior_t *const base, void *opts, Arena *const arena);
+static void view_interior_deinit(interior_t *const base);
+static void view_interior_recalculate(interior_t *const base, disp_area_t *const panel_area);
+static void view_interior_render(const interior_t *base, display_t *const display);
+static void view_interior_hover(interior_t *const base, const disp_pos_t pos);
+static void view_interior_scroll(interior_t *const base, const int dir);
 
-static void adjust_scroll_position(view_interior_t *const view, const size_t limit);
+static void adjust_scroll_position(view_interior_t *const interior, const size_t limit);
 
 static size_t data_source_get_amount(const data_source_t *const source);
 
@@ -49,86 +60,87 @@ static void *view_interior_alloc(Arena *arena)
 }
 
 
-static void view_interior_init(interior_t *const interior, void *opts)
+static void view_interior_init(interior_t *const base, void *opts, Arena *const arena)
 {
     view_interior_opts_t *view_opts = opts;
-    view_interior_t *view = (view_interior_t*)interior;
-    view->source = view_opts->source;
+    view_interior_t *interior = (view_interior_t*)base;
+    (void) arena;
+
+    interior->view = (view_interior_slice_t){
+        .source = view_opts->source,
+        // zero init for the rest of the members
+    };
 }
 
 
-static void view_interior_deinit(interior_t *const interior)
+static void view_interior_deinit(interior_t *const base)
 {
-    (void) interior;
+    (void) base;
 }
 
 
-static void view_interior_recalculate(interior_t *const interior, disp_area_t *const bounds)
+static void view_interior_recalculate(interior_t *const base, disp_area_t *const panel_area)
 {
-    view_interior_t *view = (view_interior_t*)interior;
-    interior_layout_recalculate(&view->interior.layout, bounds);
-    adjust_scroll_position(view, 0);
+    (void) panel_area;
+    view_interior_t *interior = (view_interior_t*)base;
+    adjust_scroll_position(interior, 0);
 }
 
 
-static void view_interior_render(const interior_t *interior, display_t *const display)
+static void view_interior_render(const interior_t *base, display_t *const display)
 {
-    view_interior_t *view = (view_interior_t*)interior;
+    view_interior_t *interior = (view_interior_t*)base;
 
-    const size_t limit = view->source.get_amount(view->source.data);
-    const size_t areas_count = dynarr_size(interior->layout.areas);
+    const size_t limit = data_source_get_amount(&interior->view.source);
+    const size_t areas_count = dynarr_size(base->layout.areas);
     for (size_t ai = 0; ai < areas_count; ++ai)
     {
-        interior_area_t *area = dynarr_get(interior->layout.areas, ai);
-        const bool hovered = (area == interior->last_hovered);
+        interior_area_t *area = dynarr_get(base->layout.areas, ai);
+        const bool hovered = (area == base->last_hovered);
 
         if (interior_area_is_visible(area))
         {
-            data_source_render(&view->source, display, area,
-                    limit, ai + view->scroll_offset, hovered);
+            data_source_render(&interior->view.source, display, area,
+                    limit, ai + interior->view.scroll_offset, hovered);
         }
     }
 }
 
 
-static void view_interior_hover(interior_t *const interior, const disp_pos_t pos)
+static void view_interior_hover(interior_t *const base, const disp_pos_t pos)
 {
-    interior_area_t *hovered = interior_layout_peek_area(&interior->layout, pos);
-
-    if (!hovered) { return; }
-    interior->last_hovered = hovered;
+    (void) base; (void) pos;
 }
 
 
-static void view_interior_scroll(interior_t *const interior, const int dir)
+static void view_interior_scroll(interior_t *const base, const int dir)
 {
-    view_interior_t *view = (view_interior_t*)interior;
-    const size_t limit = data_source_get_amount(&view->source);
+    view_interior_t *interior = (view_interior_t*)base;
+    const size_t limit = data_source_get_amount(&interior->view.source);
     if (SCROLL_UP == dir)
     {
-        if (view->scroll_offset == 0) { return; }
-        --view->scroll_offset;
+        if (interior->view.scroll_offset == 0) { return; }
+        --interior->view.scroll_offset;
         return;
     }
 
-    ++view->scroll_offset;
+    ++interior->view.scroll_offset;
 
-    adjust_scroll_position(view, limit);
+    adjust_scroll_position(interior, limit);
 }
 
 
-static void adjust_scroll_position(view_interior_t *const view, const size_t limit)
+static void adjust_scroll_position(view_interior_t *const interior, const size_t limit)
 {
     // CACHE? or maybe use last_hovered
-    const size_t valid_areas = interior_layout_count_valid_areas(&view->interior.layout);
+    const size_t valid_areas = interior_layout_count_valid_areas(&interior->interior.layout);
     const size_t max_scroll_offset = (limit <= valid_areas) ? 0 : limit - valid_areas;
 
-    if (view->scroll_offset >= max_scroll_offset)
+    if (interior->view.scroll_offset >= max_scroll_offset)
     {
-        view->scroll_offset = max_scroll_offset;
+        interior->view.scroll_offset = max_scroll_offset;
     }
 }
-
 
 
 static size_t data_source_get_amount(const data_source_t *const source)

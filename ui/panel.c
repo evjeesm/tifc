@@ -35,7 +35,7 @@ static disp_area_t calc_panel_area(const panel_layout_t *const layout,
 // static void panel_draw_title(const panel_t *panel, display_t *const display);
 
 
-void panel_init(panel_t *const panel, const panel_opts_t *const opts)
+void panel_init(panel_t *const panel, const panel_opts_t *const opts, Arena *const arena)
 {
     assert(panel);
     assert(opts);
@@ -43,10 +43,10 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts)
     *panel = (panel_t){
         .layout = opts->layout,
         .area = INVALID_AREA,
-        .interior = interior_alloc(opts->interior_opts),
+        .interior = interior_alloc(opts->interior_opts, arena),
     };
 
-    interior_init(panel->interior, opts->interior_opts);
+    interior_init(panel->interior, opts->interior_opts, arena);
 }
 
 

@@ -115,6 +115,8 @@ size_t interior_layout_count_valid_areas(const interior_layout_t *const layout);
 
 interior_area_t *interior_layout_peek_area(const interior_layout_t *const layout, const disp_pos_t pos);
 
+ssize_t interior_layout_peek_area_index(const interior_layout_t *const layout, const disp_pos_t pos);
+
 bool interior_area_is_visible(const interior_area_t *const area);
 
 #endif/*_INTERIOR_LAYOUT_H_*/

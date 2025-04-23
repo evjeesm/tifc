@@ -35,9 +35,8 @@ void pm_init(panel_manager_t *const pm)
 void pm_add_panel(panel_manager_t *const pm, const panel_opts_t *const opts)
 {
     assert(pm);
-    panel_t panel; panel_init(&panel, opts);
-
-    (void) dynarr_prepend(&pm->panels, &panel);
+    panel_t panel; panel_init(&panel, opts, &pm->arena);
+    (void) dynarr_append(&pm->panels, &panel); /* !! panel order is important */
 }
 
 

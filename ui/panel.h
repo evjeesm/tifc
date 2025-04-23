@@ -30,7 +30,7 @@ typedef struct
 panel_opts_t;
 
 
-void panel_init(panel_t *const panel, const panel_opts_t *const opts);
+void panel_init(panel_t *const panel, const panel_opts_t *const opts, Arena *const arena);
 void panel_deinit(panel_t *const panel);
 void panel_render(const panel_t *panel, display_t *const display);
 void panel_recalculate(panel_t *panel, disp_area_t *const bounds);
