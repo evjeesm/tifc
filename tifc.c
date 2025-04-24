@@ -5,6 +5,7 @@
 #include "interior.h"
 #include "interior_layout.h"
 #include "layout.h"
+#include "logger.h"
 #include "panel.h"
 #include "ui.h"
 #include "composite_interior.h"
@@ -32,6 +33,8 @@ static void size_t_array_render(display_t *const display,
 
 static void default_render(display_t *const display, const interior_area_t *const area,
         const void *const source, const size_t limit, const size_t index);
+
+static void btn_action(void *const data);
 
 static void tifc_deinit(tifc_t *const tifc);
 
@@ -225,6 +228,11 @@ static void make_composite_panel(tifc_t *const tifc)
                 }
             }
         },
+        .action = {
+            .action = btn_action,
+            .action_data = NULL,
+            .when = BUTTON_ON_RELEASE,
+        }
     };
 
     composite_interior_opts_t comp = {
@@ -334,6 +342,13 @@ static void default_render(display_t *const display, const interior_area_t *cons
     border_set_t border = {._ = L"╭╮╯╰┆┄"};
 
     display_draw_border(display, BORDER_STYLE_1, border, area->area);
+}
+
+
+static void btn_action(void *const data)
+{
+    (void) data;
+    S_LOG(LOGGER_DEBUG, "Button pressed!\n");
 }
 
 

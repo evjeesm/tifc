@@ -14,6 +14,7 @@
 typedef struct
 {
     bool pressed;
+    button_action_t action;
 }
 button_interior_slice_t;
 
@@ -37,6 +38,7 @@ static void button_interior_scroll(interior_t *const base, const disp_pos_t pos,
 static void button_interior_press(interior_t *const base, const disp_pos_t pos, const int btn);
 static void button_interior_release(interior_t *const base, const disp_pos_t pos, const int btn);
 
+static void action_perform(const button_action_t *const action);
 
 interior_interface_t button_interior_get_impl(void)
 {
@@ -65,11 +67,13 @@ static void *button_interior_alloc(Arena *arena)
 static void button_interior_init(interior_t *const base, void *opts, Arena *const arena)
 {
     button_interior_opts_t *button_opts = opts;
-    UNUSED(arena, button_opts);
+    assert(button_opts->action.action);
+    UNUSED(arena);
 
     button_interior_t *interior = (button_interior_t*)base;
 
     interior->button = (button_interior_slice_t) {
+        .action = button_opts->action,
     };
 }
 
@@ -105,18 +109,26 @@ static void button_interior_render(const interior_t *base, display_t *const disp
 
 static void button_interior_press(interior_t *const base, const disp_pos_t pos, const int btn)
 {
+    UNUSED(pos);
     button_interior_t *interior = (button_interior_t*)base;
     interior->button.pressed = true;
-    UNUSED(pos);
+    if (BUTTON_ON_PRESS == interior->button.action.when)
+    {
+        action_perform(&interior->button.action);
+    }
     S_LOG(LOGGER_DEBUG, "btn pressed: %d \n", btn);
 }
 
 
 static void button_interior_release(interior_t *const base, const disp_pos_t pos, const int btn)
 {
+    UNUSED(pos);
     button_interior_t *interior = (button_interior_t*)base;
     interior->button.pressed = false;
-    UNUSED(pos);
+    if (BUTTON_ON_RELEASE == interior->button.action.when)
+    {
+        action_perform(&interior->button.action);
+    }
     S_LOG(LOGGER_DEBUG, "btn released: %d \n", btn);
 }
 
@@ -144,4 +156,10 @@ static void button_interior_leave(interior_t *const base, const disp_pos_t pos)
 static void button_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir)
 {
     UNUSED(base, pos, dir);
+}
+
+
+static void action_perform(const button_action_t *const action)
+{
+    action->action(action->action_data);
 }
