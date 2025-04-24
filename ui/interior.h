@@ -5,6 +5,14 @@
 #include "display.h"
 #include "interior_layout.h"
 
+
+#define _UNUSED_1(arg) (void) arg
+#define _UNUSED_2(arg1, arg2) _UNUSED_1(arg1); _UNUSED_1(arg2)
+#define _UNUSED_3(arg1, arg2, arg3) _UNUSED_2(arg1, arg2); _UNUSED_1(arg3)
+#define _CONCAT(a, b) a ## b
+#define _UNUSED_COUNT(PREFIX, _1, _2, _3, NUM, ...) _CONCAT(PREFIX, NUM)
+#define UNUSED(...) _UNUSED_COUNT(_UNUSED_,__VA_ARGS__, 3, 2, 1)(__VA_ARGS__)
+
 /*
 * This is a component of a panel that defines the inner content.
 */
@@ -41,7 +49,6 @@ struct interior
 {
     interior_interface_t impl;
     interior_layout_t    layout;
-    interior_area_t      *last_hovered;
 };
 
 
@@ -56,6 +63,4 @@ void interior_leave(interior_t *const interior, const disp_pos_t pos);
 void interior_scroll(interior_t *const interior, const disp_pos_t pos, const int direction);
 void interior_press(interior_t *const interior, const disp_pos_t pos, const int btn);
 void interior_release(interior_t *const interior, const disp_pos_t pos, const int btn);
-size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr);
-
 #endif/*_INTERIOR_H_*/

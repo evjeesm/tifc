@@ -1,6 +1,5 @@
 #include "interior.h"
 #include "interior_layout.h"
-#include "vector.h"
 
 
 interior_t *interior_alloc(const interior_opts_t *const opts, Arena *const arena)
@@ -60,9 +59,6 @@ void interior_enter(interior_t *const interior, const disp_pos_t pos)
 void interior_hover(interior_t *const interior, const disp_pos_t pos)
 {
     assert(interior);
-    interior_area_t *hovered = interior_layout_peek_area(&interior->layout, pos);
-    if (hovered) { interior->last_hovered = hovered; }
-
     interior->impl.hover(interior, pos);
 }
 
@@ -84,24 +80,12 @@ void interior_scroll(interior_t *const interior, const disp_pos_t pos, const int
 void interior_press(interior_t *const interior, const disp_pos_t pos, const int btn)
 {
     assert(interior);
-    if(interior->impl.press) { interior->impl.press(interior, pos, btn); }
+    interior->impl.press(interior, pos, btn);
 }
 
 
 void interior_release(interior_t *const interior, const disp_pos_t pos, const int btn)
 {
     assert(interior);
-    if(interior->impl.release) { interior->impl.release(interior, pos, btn); }
+    interior->impl.release(interior, pos, btn);
 }
-
-
-/*
-* TODO: this pretend to be a legit functionality of a vector btw!
-*/
-size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr)
-{
-    const interior_area_t *origin = (interior_area_t*) vector_data(interior->layout.areas);
-    assert(ptr >= origin);
-    return (ptr - origin);
-}
-

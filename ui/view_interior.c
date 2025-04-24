@@ -13,6 +13,7 @@ typedef struct
 {
     data_source_t source;
     size_t scroll_offset;
+    interior_area_t *last_hovered;
 }
 view_interior_slice_t;
 
@@ -32,6 +33,8 @@ static void view_interior_enter(interior_t *const base, const disp_pos_t pos);
 static void view_interior_hover(interior_t *const base, const disp_pos_t pos);
 static void view_interior_leave(interior_t *const base, const disp_pos_t pos);
 static void view_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir);
+static void view_interior_press(interior_t *const base, const disp_pos_t pos, const int btn);
+static void view_interior_release(interior_t *const base, const disp_pos_t pos, const int btn);
 
 static void adjust_scroll_position(view_interior_t *const interior, const size_t limit);
 
@@ -41,9 +44,12 @@ static void data_source_render(const data_source_t *const source,
         display_t *const display, const interior_area_t *const area,
         const size_t limit, const size_t index, const bool hovered);
 
+static size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr);
+
 
 interior_interface_t view_interior_get_impl(void)
 {
+    UNUSED(last_hovered_ptr_to_index);
     return (interior_interface_t){
         .alloc       = view_interior_alloc,
         .init        = view_interior_init,
@@ -54,6 +60,8 @@ interior_interface_t view_interior_get_impl(void)
         .hover       = view_interior_hover,
         .leave       = view_interior_leave,
         .scroll      = view_interior_scroll,
+        .press       = view_interior_press,
+        .release     = view_interior_release,
     };
 }
 
@@ -79,13 +87,14 @@ static void view_interior_init(interior_t *const base, void *opts, Arena *const 
 
 static void view_interior_deinit(interior_t *const base)
 {
-    (void) base;
+    UNUSED(base);
 }
 
 
 static void view_interior_recalculate(interior_t *const base, disp_area_t *const panel_area)
 {
-    (void) panel_area;
+    UNUSED(panel_area);
+
     view_interior_t *interior = (view_interior_t*)base;
     adjust_scroll_position(interior, 0);
 }
@@ -100,7 +109,7 @@ static void view_interior_render(const interior_t *base, display_t *const displa
     for (size_t ai = 0; ai < areas_count; ++ai)
     {
         interior_area_t *area = dynarr_get(base->layout.areas, ai);
-        const bool hovered = (area == base->last_hovered);
+        const bool hovered = (area == interior->view.last_hovered);
 
         if (interior_area_is_visible(area))
         {
@@ -113,33 +122,35 @@ static void view_interior_render(const interior_t *base, display_t *const displa
 
 static void view_interior_enter(interior_t *const base, const disp_pos_t pos)
 {
-    (void) base;
-    (void) pos;
+    UNUSED(base, pos);
 }
 
 
 static void view_interior_hover(interior_t *const base, const disp_pos_t pos)
 {
-    (void) base; (void) pos;
+    view_interior_t *interior = (view_interior_t*)base;
+    interior_area_t *hovered = interior_layout_peek_area(&base->layout, pos);
+    if (hovered) { interior->view.last_hovered = hovered; }
 }
 
 
 static void view_interior_leave(interior_t *const base, const disp_pos_t pos)
 {
-    (void) pos;
+    UNUSED(pos);
     view_interior_t *interior = (view_interior_t*)base;
 
-    if (interior->interior.last_hovered)
+    if (interior->view.last_hovered)
     {
-        interior->interior.last_hovered = NULL;
+        interior->view.last_hovered = NULL;
     }
 }
 
 
 static void view_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir)
 {
+    UNUSED(pos);
     view_interior_t *interior = (view_interior_t*)base;
-    (void) pos;
+
     const size_t limit = data_source_get_amount(&interior->view.source);
     if (SCROLL_UP == dir)
     {
@@ -153,6 +164,17 @@ static void view_interior_scroll(interior_t *const base, const disp_pos_t pos, c
     adjust_scroll_position(interior, limit);
 }
 
+
+static void view_interior_press(interior_t *const base, const disp_pos_t pos, const int btn)
+{
+    UNUSED(base, pos, btn);
+}
+
+
+static void view_interior_release(interior_t *const base, const disp_pos_t pos, const int btn)
+{
+    UNUSED(base, pos, btn);
+}
 
 static void adjust_scroll_position(view_interior_t *const interior, const size_t limit)
 {
@@ -178,4 +200,15 @@ static void data_source_render(const data_source_t *const source,
         const size_t limit, const size_t index, const bool hovered)
 {
     source->render(display, area, source->data, limit, index, hovered);
+}
+
+
+/*
+* TODO: this pretend to be a legit functionality of a vector btw!
+*/
+size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr)
+{
+    const interior_area_t *origin = (interior_area_t*) vector_data(interior->layout.areas);
+    assert(ptr >= origin);
+    return (ptr - origin);
 }

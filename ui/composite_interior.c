@@ -134,9 +134,6 @@ static void composite_interior_render(const interior_t *base, display_t *const d
     for (size_t ai = 0; ai < areas_count; ++ai)
     {
         interior_area_t *area = dynarr_get(base->layout.areas, ai);
-        const bool hovered = (area == base->last_hovered);
-        (void) hovered;
-
         if (interior_area_is_visible(area))
         {
             interior_t **comp = sparse_get(interior->composite.components, ai);
