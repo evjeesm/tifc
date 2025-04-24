@@ -15,8 +15,6 @@ static void on_drag_begin(const mouse_event_t *const, void *const);
 static void on_drag(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_scroll(const mouse_event_t *const, void *const);
-static panel_t *ui_peek_panel(ui_t *const ui, const disp_pos_t pos);
-
 
 static input_hooks_t hooks_init(void)
 {
@@ -91,39 +89,33 @@ void ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
 }
 
 
-static panel_t *ui_peek_panel(ui_t *const ui, const disp_pos_t pos)
-{
-    return pm_peek_panel(&ui->pm, pos);
-}
-
-
 static void on_hover(const mouse_event_t *const hover, void *const param)
 {
     ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::hover, at %u, %u\n",
         hover->position.x, hover->position.y);
 
-    /* zero based position */
-    disp_pos_t norm_pos = {hover->position.x - 1, hover->position.y - 1};
-    panel_t *panel = ui_peek_panel(ui, norm_pos);
-    if (!panel) { return; }
-    panel_hover(panel, norm_pos);
+    pm_hover(&ui->pm, hover->position);
 }
 
 
 static void on_press(const mouse_event_t *const press, void *const param)
 {
-    (void) param;
+    ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::press %d, at %u, %u\n",
         press->mouse_button, press->position.x, press->position.y);
+
+    pm_press(&ui->pm, press->position, press->mouse_button);
 }
 
 
 static void on_release(const mouse_event_t *const press, void *const param)
 {
-    (void) param;
+    ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::release %d, at %u, %u\n",
         press->mouse_button, press->position.x, press->position.y);
+
+    pm_release(&ui->pm, press->position, press->mouse_button);
 }
 
 
@@ -162,12 +154,5 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
     S_LOG(LOGGER_DEBUG, "UI::scroll %d at %u, %u\n",
         scroll->mouse_button, scroll->position.x, scroll->position.y);
 
-    /* zero based position */
-    disp_pos_t norm_pos = {scroll->position.x - 1, scroll->position.y - 1};
-    panel_t *panel = ui_peek_panel(ui, norm_pos);
-
-    if (!panel) { return; }
-
-    panel_scroll(panel, scroll->mouse_button);
+    pm_scroll(&ui->pm, scroll->position, scroll->mouse_button);
 }
-

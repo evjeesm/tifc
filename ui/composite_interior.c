@@ -11,7 +11,8 @@
 /* only extended part */
 typedef struct
 {
-    sparse_t *components; /* maps component to an area index */
+    sparse_t *components;     /* maps component to an area index */
+    interior_t *last_hovered; /* last hovered component */
 }
 composite_interior_slice_t;
 
@@ -28,8 +29,12 @@ static void composite_interior_init(interior_t *const base, void *opts, Arena *c
 static void composite_interior_deinit(interior_t *const base);
 static void composite_interior_recalculate(interior_t *const base, disp_area_t *const panel_area);
 static void composite_interior_render(const interior_t *base, display_t *const display);
+static void composite_interior_enter(interior_t *const base, const disp_pos_t pos);
 static void composite_interior_hover(interior_t *const base, const disp_pos_t pos);
-static void composite_interior_scroll(interior_t *const base, const int dir);
+static void composite_interior_leave(interior_t *const base, const disp_pos_t pos);
+static void composite_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir);
+static void composite_interior_press(interior_t *const base, const disp_pos_t pos, const int btn);
+static void composite_interior_release(interior_t *const base, const disp_pos_t pos, const int btn);
 
 
 interior_interface_t composite_interior_get_impl(void)
@@ -40,8 +45,12 @@ interior_interface_t composite_interior_get_impl(void)
         .deinit = composite_interior_deinit,
         .recalculate = composite_interior_recalculate,
         .render = composite_interior_render,
+        .enter = composite_interior_enter,
         .hover = composite_interior_hover,
+        .leave = composite_interior_leave,
         .scroll = composite_interior_scroll,
+        .press = composite_interior_press,
+        .release = composite_interior_release,
     };
 }
 
@@ -140,6 +149,12 @@ static void composite_interior_render(const interior_t *base, display_t *const d
 }
 
 
+static void composite_interior_enter(interior_t *const base, const disp_pos_t pos)
+{
+    (void) base; (void) pos;
+}
+
+
 static void composite_interior_hover(interior_t *const base, const disp_pos_t pos)
 {
     composite_interior_t *interior = (composite_interior_t*)base;
@@ -149,27 +164,95 @@ static void composite_interior_hover(interior_t *const base, const disp_pos_t po
         return;
     }
 
+    interior_t *last_hovered = interior->composite.last_hovered;
     interior_t **comp = sparse_get(interior->composite.components, area_index);
     if (comp)
     {
-        interior_hover(*comp, pos); // TODO hovered?
+        interior_t *cur_hovered = *comp;
+        if (last_hovered != *comp)
+        {
+            if (last_hovered) { interior_leave(last_hovered, pos); }
+            if (cur_hovered) { interior_enter(cur_hovered, pos); }
+        }
+        else {
+            if (cur_hovered) { interior_hover(cur_hovered, pos); }
+        }
+
+        interior->composite.last_hovered = cur_hovered;
     }
 }
 
 
-static void composite_interior_scroll(interior_t *const base, const int dir)
+static void composite_interior_leave(interior_t *const base, const disp_pos_t pos)
+{
+    composite_interior_t *interior = (composite_interior_t*)base;
+    (void) pos;
+    if (interior->composite.last_hovered)
+    {
+        interior_leave(interior->composite.last_hovered, pos);
+    }
+}
+
+
+static void composite_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir)
 {
     composite_interior_t *interior = (composite_interior_t*)base;
 
+#if __BASED_ON_LAST_HOVERED
     if (!base->last_hovered)
     {
         return;
     }
-
     size_t index = last_hovered_ptr_to_index(base, base->last_hovered);
+#else
+    ssize_t index = interior_layout_peek_area_index(&base->layout, pos);
+    if (-1 == index) { return; }
+#endif
     interior_t **comp = sparse_get(interior->composite.components, index);
     if (comp)
     {
-        interior_scroll(*comp, dir);
+        interior_scroll(*comp, pos, dir);
+    }
+}
+
+
+static void composite_interior_press(interior_t *const base, const disp_pos_t pos, const int btn)
+{
+    composite_interior_t *interior = (composite_interior_t*)base;
+#if __BASED_ON_LAST_HOVERED
+    if (!base->last_hovered)
+    {
+        return;
+    }
+    size_t index = last_hovered_ptr_to_index(base, base->last_hovered);
+#else
+    ssize_t index = interior_layout_peek_area_index(&base->layout, pos);
+    if (-1 == index) { return; }
+#endif
+    interior_t **comp = sparse_get(interior->composite.components, index);
+    if (comp)
+    {
+        interior_press(*comp, pos, btn);
+    }
+}
+
+
+static void composite_interior_release(interior_t *const base, const disp_pos_t pos, const int btn)
+{
+    composite_interior_t *interior = (composite_interior_t*)base;
+#if __BASED_ON_LAST_HOVERED
+    if (!base->last_hovered)
+    {
+        return;
+    }
+    size_t index = last_hovered_ptr_to_index(base, base->last_hovered);
+#else
+    ssize_t index = interior_layout_peek_area_index(&base->layout, pos);
+    if (-1 == index) { return; }
+#endif
+    interior_t **comp = sparse_get(interior->composite.components, index);
+    if (comp)
+    {
+        interior_release(*comp, pos, btn);
     }
 }

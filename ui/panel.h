@@ -34,8 +34,12 @@ void panel_init(panel_t *const panel, const panel_opts_t *const opts, Arena *con
 void panel_deinit(panel_t *const panel);
 void panel_render(const panel_t *panel, display_t *const display);
 void panel_recalculate(panel_t *panel, disp_area_t *const bounds);
+void panel_enter(panel_t *const panel, const disp_pos_t pos);
 void panel_hover(panel_t *const panel, const disp_pos_t pos);
-void panel_scroll(panel_t *const panel, const int direction);
+void panel_leave(panel_t *const panel, const disp_pos_t pos);
+void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction);
+void panel_press(panel_t *const panel, const disp_pos_t pos, const int btn);
+void panel_release(panel_t *const panel, const disp_pos_t pos, const int btn);
 
 /* TODO: add other event handlers by panel interface */
 

@@ -322,8 +322,8 @@ static mouse_event_t decode_mouse_event(unsigned char buffer[static 3])
         .modifier = (buffer[0] >> 2) & 0x7 /*3 bits*/,
         .motion = (buffer[0] >> 5) & 0x3   /*2 bits*/,
         .position = {
-            buffer[1] - MOUSE_OFFSET,
-            buffer[2] - MOUSE_OFFSET
+            (buffer[1] - MOUSE_OFFSET) - 1, /* convert to zero-based */
+            (buffer[2] - MOUSE_OFFSET) - 1, /* convert to zero-based */
         },
     };
 

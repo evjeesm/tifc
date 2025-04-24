@@ -198,7 +198,32 @@ static void make_composite_panel(tifc_t *const tifc)
     button_interior_opts_t btn = {
         .interior = {
             .impl = button_interior_get_impl(),
-            .layout = {0},
+            .layout = {
+                .columns = 1,
+                .columns_def = (counted_layout_def_t[]){
+                    {
+                        .amount = 1,
+                        .layout = {
+                            .size = 100,
+                            .size_method = LAYOUT_SIZE_RELATIVE,
+                        }
+                    }
+                },
+                .rows = 1,
+                .rows_def = (counted_layout_def_t[]){
+                    {
+                        .amount = 1,
+                        .layout = {
+                            .size = 100,
+                            .size_method = LAYOUT_SIZE_RELATIVE,
+                        }
+                    }
+                },
+                .areas = 1,
+                .areas_def = (interior_area_def_t[]){
+                    {{0, 0}, {0, 0}}
+                }
+            }
         },
     };
 

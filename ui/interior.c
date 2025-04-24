@@ -49,6 +49,14 @@ void interior_render(const interior_t *interior, display_t *const display)
 }
 
 
+void interior_enter(interior_t *const interior, const disp_pos_t pos)
+{
+    assert(interior);
+    interior->impl.enter(interior, pos);
+    interior_hover(interior, pos);
+}
+
+
 void interior_hover(interior_t *const interior, const disp_pos_t pos)
 {
     assert(interior);
@@ -59,10 +67,31 @@ void interior_hover(interior_t *const interior, const disp_pos_t pos)
 }
 
 
-void interior_scroll(interior_t *const interior, const int direction)
+void interior_leave(interior_t *const interior, const disp_pos_t pos)
 {
     assert(interior);
-    interior->impl.scroll(interior, direction);
+    interior->impl.leave(interior, pos);
+}
+
+
+void interior_scroll(interior_t *const interior, const disp_pos_t pos, const int direction)
+{
+    assert(interior);
+    interior->impl.scroll(interior, pos, direction);
+}
+
+
+void interior_press(interior_t *const interior, const disp_pos_t pos, const int btn)
+{
+    assert(interior);
+    if(interior->impl.press) { interior->impl.press(interior, pos, btn); }
+}
+
+
+void interior_release(interior_t *const interior, const disp_pos_t pos, const int btn)
+{
+    assert(interior);
+    if(interior->impl.release) { interior->impl.release(interior, pos, btn); }
 }
 
 

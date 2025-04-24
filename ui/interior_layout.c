@@ -4,7 +4,6 @@
 #include "logger.h"
 
 #include <assert.h>
-#include <string.h>
 
 #define MIN_LAYOUT_AREA_SIZE 1
 
@@ -142,8 +141,6 @@ size_t interior_layout_count_valid_areas(const interior_layout_t * const layout)
 
 interior_area_t *interior_layout_peek_area(const interior_layout_t *const layout, const disp_pos_t pos)
 {
-    if (IS_NO_LAYOUT(layout)) { return NULL; }
-
     const size_t areas_amount = dynarr_size(layout->areas);
     for (size_t ai = 0; ai < areas_amount; ++ai)
     {

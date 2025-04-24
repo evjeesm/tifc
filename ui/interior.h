@@ -18,8 +18,12 @@ typedef struct
     void (*deinit) (interior_t *const interior);
     void (*recalculate) (interior_t *const interior, disp_area_t *const panel_area);
     void (*render) (const interior_t *interior, display_t *const display);
+    void (*enter) (interior_t *const interior, const disp_pos_t pos);
     void (*hover) (interior_t *const interior, const disp_pos_t pos);
-    void (*scroll) (interior_t *const interior, const int dir);
+    void (*leave) (interior_t *const interior, const disp_pos_t pos);
+    void (*scroll) (interior_t *const interior, const disp_pos_t pos, const int dir);
+    void (*press) (interior_t *const interior, const disp_pos_t pos, const int btn);
+    void (*release) (interior_t *const interior, const disp_pos_t pos, const int btn);
     /* ... */
 }
 interior_interface_t;
@@ -46,8 +50,12 @@ void interior_init(interior_t *const interior, const interior_opts_t *const opts
 void interior_deinit(interior_t *const interior);
 void interior_render(const interior_t *interior, display_t *const display);
 void interior_recalculate(interior_t *interior, disp_area_t *const panel_area);
+void interior_enter(interior_t *const interior, const disp_pos_t pos);
 void interior_hover(interior_t *const interior, const disp_pos_t pos);
-void interior_scroll(interior_t *const interior, const int direction);
+void interior_leave(interior_t *const interior, const disp_pos_t pos);
+void interior_scroll(interior_t *const interior, const disp_pos_t pos, const int direction);
+void interior_press(interior_t *const interior, const disp_pos_t pos, const int btn);
+void interior_release(interior_t *const interior, const disp_pos_t pos, const int btn);
 size_t last_hovered_ptr_to_index(const interior_t *const interior, const interior_area_t *const ptr);
 
 #endif/*_INTERIOR_H_*/

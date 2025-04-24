@@ -63,6 +63,8 @@ interior_area_def_t;
                                   && (span_ptr)->end == (uint16_t) -1)
 #define INVALID_SPAN ((span_t){-1, -1})
 
+#define NO_LAYOUT_OPT ((interior_layout_opts_t){0})
+#define IS_NO_LAYOUT_OPT(layout_opts_p) (0 == memcmp(&NO_LAYOUT_OPT, layout_opts_p, sizeof(NO_LAYOUT_OPT)))
 
 typedef struct
 {

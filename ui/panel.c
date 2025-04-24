@@ -85,15 +85,39 @@ void panel_render(const panel_t *panel, display_t *const display)
 }
 
 
+void panel_enter(panel_t *const panel, const disp_pos_t pos)
+{
+    interior_enter(panel->interior, pos);
+}
+
+
 void panel_hover(panel_t *const panel, const disp_pos_t pos)
 {
     interior_hover(panel->interior, pos);
 }
 
 
-void panel_scroll(panel_t *const panel, const int direction)
+void panel_leave(panel_t *const panel, const disp_pos_t pos)
 {
-    interior_scroll(panel->interior, direction);
+    interior_leave(panel->interior, pos);
+}
+
+
+void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction)
+{
+    interior_scroll(panel->interior, pos, direction);
+}
+
+
+void panel_press(panel_t *const panel, const disp_pos_t pos, const int btn)
+{
+    interior_press(panel->interior, pos, btn);
+}
+
+
+void panel_release(panel_t *const panel, const disp_pos_t pos, const int btn)
+{
+    interior_release(panel->interior, pos, btn);
 }
 
 
