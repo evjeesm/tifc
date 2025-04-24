@@ -123,25 +123,25 @@ static void button_interior_release(interior_t *const base, const disp_pos_t pos
 
 static void button_interior_enter(interior_t *const base, const disp_pos_t pos)
 {
-    (void) base; (void) pos;
+    UNUSED(base, pos);
 }
 
 
 static void button_interior_hover(interior_t *const base, const disp_pos_t pos)
 {
-    (void) base; (void) pos;
+    UNUSED(base, pos);
 }
 
 
 static void button_interior_leave(interior_t *const base, const disp_pos_t pos)
 {
     button_interior_t *interior = (button_interior_t*)base;
-    (void) pos;
+    UNUSED(pos);
     interior->button.pressed = false;
 }
 
 
 static void button_interior_scroll(interior_t *const base, const disp_pos_t pos, const int dir)
 {
-    (void) base; (void) pos; (void) dir;
+    UNUSED(base, pos, dir);
 }
