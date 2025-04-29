@@ -92,7 +92,6 @@ static void button_interior_recalculate(interior_t *const base, disp_area_t *con
 
 static void button_interior_render(const interior_t *base, display_t *const display)
 {
-    UNUSED(display);
     button_interior_t *interior = (button_interior_t*)base;
     interior_area_t *area = dynarr_first(interior->interior.layout.areas);
 
