@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 static void on_hover(const mouse_event_t *const hover, void *const param)
 {
@@ -61,6 +62,18 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
         scroll->position.x, scroll->position.y);
 }
 
+static void on_keystroke(const keystroke_event_t *const keystroke, void *const param)
+{
+    (void) param;
+    printf("keystroke mod(%d), ch: '%c' (%x)\n", keystroke->modifier, keystroke->stroke, keystroke->stroke);
+    // Check for Ctrl+D
+    if (keystroke->stroke == '\x04')
+    {
+        printf("\nEOF detected. Exiting...\n");
+        exit(EXIT_SUCCESS);
+    }
+}
+
 int main(void)
 {
     input_hooks_t hooks = {
@@ -71,6 +84,7 @@ int main(void)
         .on_drag = on_drag,
         .on_drag_end = on_drag_end,
         .on_scroll = on_scroll,
+        .on_keystroke = on_keystroke,
     };
     input_enable_mouse();
     input_t input = input_init();
@@ -78,7 +92,6 @@ int main(void)
     {
         int status = input_handle_events(&input, &hooks, NULL);
         if (status) break;
-        usleep(100);
     }
 
     input_deinit(&input);
