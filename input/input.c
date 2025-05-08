@@ -98,7 +98,7 @@ void input_enable_mouse(void)
     tcgetattr(STDIN_FILENO, &attr);
     attr.c_cc[VMIN] = 1; // Minimum number of characters to read
     attr.c_cc[VTIME] = 0; // No timeout
-    attr.c_lflag &= ~(ICANON | ECHO);
+    attr.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
     printf(MOUSE_EVENTS_ON PASTE_MODE_ON);
     fflush(stdout);
@@ -110,11 +110,12 @@ void input_disable_mouse(void)
     // enable canon mode and echo 
     struct termios attr;
     tcgetattr(STDIN_FILENO, &attr);
-    attr.c_lflag |= (ICANON | ECHO);
+    attr.c_lflag |= (ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
     printf(MOUSE_EVENTS_OFF PASTE_MODE_OFF);
     fflush(stdout);
 }
+
 
 int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
@@ -132,16 +133,16 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
         {
             perror("epoll_wait");
             return errno;
-        }
-        // The call was interrupted by a signal;
-        // Process signals and continue:
-        if (s_sm.sigint)
+
+    for (int e = 0; e < events_num; e++)
+    {
+        if (events[e].events & EPOLLIN)
         {
-            s_sm.sigint = false;
-            printf("Exit!\n");
-            return -1;
-        }
-        // Retry epoll_wait
+            // process standard input
+            if (events[e].data.fd == STDIN_FILENO)
+            {
+                // Data available from stdin
+                int status = input_read(input);
     }
 
     for (int e = 0; e < events_num; e++)
