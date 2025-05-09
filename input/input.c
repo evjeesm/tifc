@@ -527,7 +527,6 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
 
                 default:    ke->code = map_nav(ch);
                             if (!ke->code) { return INPUT_ERROR; }
-                            S_LOG(LOGGER_DEBUG, "[%c %x]\n", ch, ch);
                             handle_navigation(input, hooks, param);
             }
             sm->state = S0;

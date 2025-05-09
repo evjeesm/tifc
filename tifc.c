@@ -10,8 +10,10 @@
 #include "ui.h"
 #include "composite_interior.h"
 #include "view_interior.h"
+#include "text_input_field_interior.h"
 
 #include <locale.h>
+#include <stddef.h>
 #include <stdio.h>
 
 size_t g_array [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -35,6 +37,7 @@ static void default_render(display_t *const display, const interior_area_t *cons
         const void *const source, const size_t limit, const size_t index);
 
 static void btn_action(void *const data);
+static void inp_action(void *const data);
 
 static void tifc_deinit(tifc_t *const tifc);
 
@@ -234,6 +237,42 @@ static void make_composite_panel(tifc_t *const tifc)
             .when = BUTTON_ON_RELEASE,
         }
     };
+    text_input_field_interior_opts_t inp = {
+        .interior = {
+            .impl = text_input_field_interior_get_impl(),
+            .layout = {
+                .columns = 1,
+                .columns_def = (counted_layout_def_t[]){
+                    {
+                        .amount = 1,
+                        .layout = {
+                            .size = 100,
+                            .size_method = LAYOUT_SIZE_RELATIVE,
+                        }
+                    }
+                },
+                .rows = 1,
+                .rows_def = (counted_layout_def_t[]){
+                    {
+                        .amount = 1,
+                        .layout = {
+                            .size = 100,
+                            .size_method = LAYOUT_SIZE_RELATIVE,
+                        }
+                    }
+                },
+                .areas = 1,
+                .areas_def = (interior_area_def_t[]){
+                    {{0, 0}, {0, 0}}
+                }
+            }
+        },
+        .action = {
+            .submit = inp_action,
+            .submit_data = NULL,
+        },
+        .max_length = 12,
+    };
 
     composite_interior_opts_t comp = {
         .interior = {
@@ -256,8 +295,15 @@ static void make_composite_panel(tifc_t *const tifc)
                         }
                     },
                 },
-                .rows = 1,
+                .rows = 2,
                 .rows_def = (counted_layout_def_t[]){
+                    {
+                        .amount = 1,
+                        .layout = {
+                            .size_method = LAYOUT_SIZE_RELATIVE,
+                            .size = 50
+                        }
+                    },
                     {
                         .amount = 1,
                         .layout = {
@@ -266,17 +312,19 @@ static void make_composite_panel(tifc_t *const tifc)
                         }
                     },
                 },
-                .areas = 2,
+                .areas = 3,
                 .areas_def = (interior_area_def_t[]){
-                    {{0, 0}, {0, 0}},
+                    {{0, 0}, {0, 1}},
                     {{1, 1}, {0, 0}},
+                    {{1, 1}, {1, 1}},
                 }
             },
         },
-        .components_amount = 2,
+        .components_amount = 3,
         .component_defs = (component_def_t[]){
             {.area_idx = 0, .opts = (interior_opts_t*)&view},
             {.area_idx = 1, .opts = (interior_opts_t*)&btn},
+            {.area_idx = 2, .opts = (interior_opts_t*)&inp},
         }
     };
     panel_opts_t *panel = &(panel_opts_t){
@@ -347,8 +395,15 @@ static void default_render(display_t *const display, const interior_area_t *cons
 
 static void btn_action(void *const data)
 {
-    (void) data;
+    UNUSED(data);
     S_LOG(LOGGER_DEBUG, "Button pressed!\n");
+}
+
+
+static void inp_action(void *const data)
+{
+    UNUSED(data);
+    S_LOG(LOGGER_DEBUG, "Input Action!\n");
 }
 
 
