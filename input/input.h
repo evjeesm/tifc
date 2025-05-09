@@ -233,6 +233,8 @@ typedef struct input_hooks
         const mouse_event_t *const end, void *const param);
     void (*on_scroll)(const mouse_event_t *const scroll, void *const param);
     void (*on_keystroke)(const keystroke_event_t *const keystroke, void *const param);
+    void (*on_navigation)(const keystroke_event_t *const keystroke, void *const param);
+    void (*on_special_key)(const keystroke_event_t *const keystroke, void *const param);
 }
 input_hooks_t;
 

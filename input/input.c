@@ -690,58 +690,13 @@ static void handle_keyboard(input_t *const input, const input_hooks_t *const hoo
 
 static void handle_special_keys(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
-    (void) input; (void) hooks; (void) param;
-    switch ((int)input->keystroke_mode.keystroke.code)
-    {
-        case KEY_ESC: S_LOG(LOGGER_DEBUG, "ESC\n"); break;
-        case KEY_F1:  S_LOG(LOGGER_DEBUG, "F1\n"); break;
-        case KEY_F2:  S_LOG(LOGGER_DEBUG, "F2\n"); break;
-        case KEY_F3:  S_LOG(LOGGER_DEBUG, "F3\n"); break;
-        case KEY_F4:  S_LOG(LOGGER_DEBUG, "F4\n"); break;
-        case KEY_F5:  S_LOG(LOGGER_DEBUG, "F5\n"); break;
-        case KEY_F6:  S_LOG(LOGGER_DEBUG, "F6\n"); break;
-        case KEY_F7:  S_LOG(LOGGER_DEBUG, "F7\n"); break;
-        case KEY_F8:  S_LOG(LOGGER_DEBUG, "F8\n"); break;
-        case KEY_F9:  S_LOG(LOGGER_DEBUG, "F9\n"); break;
-        case KEY_F10: S_LOG(LOGGER_DEBUG, "F10\n"); break;
-        case KEY_F11: S_LOG(LOGGER_DEBUG, "F11\n"); break;
-        case KEY_F12: S_LOG(LOGGER_DEBUG, "F12\n"); break;
-        case KEY_INSERT: S_LOG(LOGGER_DEBUG, "INSERT\n"); break;
-        case KEY_DELETE: S_LOG(LOGGER_DEBUG, "DELETE mod(%d)\n",
-                                 input->keystroke_mode.keystroke.modifier);
-    }}
+    hooks->on_special_key(&input->keystroke_mode.keystroke, param);
+}
 
 
 static void handle_navigation(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
-    (void) input; (void) hooks; (void) param;
-    switch ((int)input->keystroke_mode.keystroke.code)
-    {
-        case KEY_UP: S_LOG(LOGGER_DEBUG, "UP mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_DOWN: S_LOG(LOGGER_DEBUG, "DOWN mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_RIGHT: S_LOG(LOGGER_DEBUG, "RIGHT mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_LEFT: S_LOG(LOGGER_DEBUG, "LEFT mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break; 
-        case KEY_HOME: S_LOG(LOGGER_DEBUG, "HOME mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_END: S_LOG(LOGGER_DEBUG, "END mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_PAGE_UP: S_LOG(LOGGER_DEBUG, "PAGE_UP mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-        case KEY_PAGE_DOWN: S_LOG(LOGGER_DEBUG, "PAGE_DOWN mod(%d)\n",
-                    input->keystroke_mode.keystroke.modifier);
-            break;
-    }
+    hooks->on_navigation(&input->keystroke_mode.keystroke, param);
 }
 
 
