@@ -28,6 +28,18 @@ static void resize_handler(int signo, siginfo_t *info, void *ctx)
 }
 
 
+void display_hide_cursor(void)
+{
+    printf(HIDE_CURSOR);
+}
+
+
+void display_show_cursor(void)
+{
+    printf(SHOW_CURSOR);
+}
+
+
 void display_enter_alternate_screen(void)
 {
     printf(ALTER_SCREEN);
@@ -240,8 +252,8 @@ void display_draw_string_aligned(display_t *const display,
     assert(area.second.x <= display->size.x);
     assert(area.second.y <= display->size.y);
 
-    unsigned int hmax = area.second.x - area.first.x;
-    unsigned int vmax = area.second.y - area.first.y;
+    unsigned int hmax = area.second.x - area.first.x + 1;
+    unsigned int vmax = area.second.y - area.first.y + 1;
     disp_pos_t pos = {0};
 
     if (LAYOUT_ALIGN_CENTER == text_align
@@ -355,6 +367,18 @@ disp_area_t normalized_area(disp_area_t area)
     }
 
     return (disp_area_t) {top_left, bottom_right};
+}
+
+
+size_t disp_area_height(disp_area_t area)
+{
+    return area.second.y - area.first.y + 1;
+}
+
+
+size_t disp_area_width(disp_area_t area)
+{
+    return area.second.x - area.first.x + 1;
 }
 
 

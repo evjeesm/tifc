@@ -53,6 +53,9 @@ typedef struct
 }
 resize_hook_with_data_t;
 
+void display_hide_cursor(void);
+void display_show_cursor(void);
+
 void display_enter_alternate_screen(void);
 void display_leave_alternate_screen(void);
 
@@ -111,6 +114,10 @@ display_set_resize_handler(display_t *const display,
 void display_clear(display_t *const display);
 bool disp_pos_equal(disp_pos_t a, disp_pos_t b);
 disp_area_t normalized_area(disp_area_t area);
+
+size_t disp_area_height(disp_area_t area);
+size_t disp_area_width(disp_area_t area);
+
 void display_erase(void);
 
 #endif//_DISPLAY_H_
