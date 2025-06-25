@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/epoll.h>
-#include <signal.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -21,26 +20,16 @@
 #define MAX_EVENTS 10
 #define FEED_ERROR(ch) { S_LOG(LOGGER_CRITICAL, "Error: '%c' = (%x)\n", ch, ch); return INPUT_ERROR; }
 
+
 typedef struct
 {
     int temp;
 }
 buffer_t;
 
-// global struct monitoring signals
-typedef struct
-{
-    bool sigint;
-}
-signal_monitor_t;
-static volatile signal_monitor_t s_sm = {0};
 
-static void setup_signal_handlers(void);
-static void handle_sigint(int sig, siginfo_t *info, void *ctx);
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static void handle_keyboard(input_t *const input, const input_hooks_t *const hooks, void *const param);
-static void handle_special_keys(input_t *const input, const input_hooks_t *const hooks, void *const param);
-static void handle_navigation(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static mouse_event_t decode_mouse_event(unsigned char buffer[static 3]);
 static void print_mouse_event(const mouse_event_t *const event);
 static int input_read(input_t *const input);
@@ -50,9 +39,15 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks, vo
 
 static bool is_upper(int ch);
 static bool is_control_char(int ch);
-static keycode_t map_ascii(char ch);
+static input_modifier_t map_ctrl_shft_mod(int ch);
+
+static keystroke_event_t make_ascii_event(int ch);
+static keystroke_event_t make_nav_event(int ch, input_modifier_t mod);
+static keystroke_event_t make_fk_event(int ch, input_modifier_t mod);
+static keycode_t map_ascii(int ch);
 static keycode_t map_nav(int ch);
 static keycode_t map_fk(int ch);
+
 
 input_t input_init(void)
 {
@@ -86,7 +81,6 @@ input_t input_init(void)
         exit(EXIT_FAILURE);
     }
 
-    setup_signal_handlers();
 
     return (input_t) {
         .queue = queue,
@@ -95,12 +89,14 @@ input_t input_init(void)
     };
 }
 
+
 void input_deinit(input_t *const input)
 {
     hm_destroy(input->descriptors);
     circbuf_destroy(input->queue);
     close(input->epfd);
 }
+
 
 void input_enable_mouse(void)
 {
@@ -233,7 +229,8 @@ static void input_on_timeout(input_t *const input, const input_hooks_t *const ho
     {
         sm->state = S0;
         ke->code = KEY_ESC;
-        handle_special_keys(input, hooks, param);
+        ke->modifier = MOD_CTRL;
+        handle_keyboard(input, hooks, param);
     }
     // S_LOG(LOGGER_DEBUG, "TIMEOUT!");
     input->state_machine.escape_pressed = false;
@@ -264,8 +261,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
     input_sm_t *sm = &input->state_machine;
     keystroke_event_t *ke = &input->keystroke_mode.keystroke;
 
-    ke->stroke = ch;
-
+    ke->stroke = 0;
     switch (sm->state)
     {
         case S0: S_LOG(LOGGER_DEBUG, "\n");
@@ -274,20 +270,23 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             {
                 case '\x1b':S_LOG(LOGGER_DEBUG, "ESC ");
                             sm->state = S1;
+                            ke->stroke = ch;
                             sm->escape_pressed = true;
                             break;
 
                 case '\x7f':S_LOG(LOGGER_DEBUG, "BACKSPACE\n");
                             sm->state = S0;
-                            ke->code = KEY_BACKSPACE;
-                            handle_special_keys(input, hooks, param);
+                            *ke = make_ascii_event(ch);
+                            ke->stroke = '\0';
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    sm->state = S0;
-                            ke->code = map_ascii(ch);
-                            ke->modifier |= (is_upper(ch) ? MOD_SHIFT : 0);
-                            ke->modifier |= (is_control_char(ch) ? MOD_CTRL : 0);
-                            handle_keyboard(input, hooks, param);
+                            if (isascii(ch))
+                            {
+                                *ke = make_ascii_event(ch);
+                                handle_keyboard(input, hooks, param);
+                            }
             }
             break;
 
@@ -309,11 +308,8 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                             break;
 
                 default:    sm->state = S0;
-                            ke->code = map_ascii(ch);
+                            *ke = make_ascii_event(ch);
                             ke->modifier |= MOD_ALT;
-                            ke->modifier |= (is_upper(ch) ? MOD_SHIFT : 0);
-                            ke->modifier |= (is_control_char(ch) ? MOD_CTRL : 0);
-                            // S_LOG(LOGGER_DEBUG, "ALT char: '%c'\n", ch);
                             handle_keyboard(input, hooks, param);
             }
             break;
@@ -339,9 +335,8 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                             break;
 
                 case '5': case '6':
-                            ke->code = map_nav(ch);
-                            if (!ke->code) return INPUT_ERROR;
                             sm->state = S18;
+                            *ke = make_nav_event(ch, ke->modifier);
                             break;
 
                 case 'M':   sm->state = S3;
@@ -349,15 +344,12 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
 
                 case 'A': case 'B': case 'C':
                 case 'D': case 'F': case 'H':
-                            ke->code = map_nav(ch);
-                            if (!ke->code) return INPUT_ERROR;
-                            handle_navigation(input, hooks, param);
                             sm->state = S0;
-                            break;
-                default:
-                            ke->code = map_ascii(ch);
+                            *ke = make_nav_event(ch, ke->modifier);
                             handle_keyboard(input, hooks, param);
-                            sm->state = S0;
+                            break;
+
+                default: FEED_ERROR(ch);
             }
             break;
 
@@ -376,7 +368,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                     handle_mouse(input, hooks, param);
                     break;
 
-        /* PASTE SEQUENCE */
+        /* PASTE SEQUENCE and FK */
         case S6:
             switch (ch)
             {
@@ -384,15 +376,15 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                             sm->state = S7;
                             break;
  
-                case '1': case '3': case '4':
-                            S_LOG(LOGGER_DEBUG, "%c ", ch);
-                            ke->code = map_fk(ch);
+                case '1': case '3': case '4': S_LOG(LOGGER_DEBUG, "%c ", ch);
                             sm->state = S21;
+                            *ke = make_fk_event(ch, ke->modifier);
                             break;
 
-                case '~':   ke->code = KEY_INSERT;
-                            sm->state = S0;
-                            handle_special_keys(input, hooks, param);
+                case '~':   sm->state = S0;
+                            ke->code = KEY_INSERT;
+                            ke->stroke = '\0';
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -407,14 +399,15 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                             break;
 
                 /* Edge case for <F9> { */
-                case ';':   ke->code = map_fk('0');
+                case ';':   S_LOG(LOGGER_DEBUG, "; ");
                             sm->state = S22;
+                            *ke = make_fk_event('0', ke->modifier);
                             break;
 
                 case '~':   S_LOG(LOGGER_DEBUG, "~\n");
-                            ke->code = map_fk('0');
                             sm->state = S0;
-                            handle_special_keys(input, hooks, param);
+                            *ke = make_fk_event('0', ke->modifier);
+                            handle_keyboard(input, hooks, param);
                             break;
                 /* } */
                 default:    FEED_ERROR(ch);
@@ -435,7 +428,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             switch (ch)
             {
                 case '\x1b':S_LOG(LOGGER_DEBUG, "\nESC ");
-                            sm->state = S10; 
+                            sm->state = S10;
                             break;
                 default:    S_LOG(LOGGER_DEBUG, "%x", ch); // TODO: store pasted text
             }
@@ -497,13 +490,12 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             {
                 case ';':   S_LOG(LOGGER_DEBUG, "; ");
                             sm->state = S16;
-                            // handle_keyboard(input, hooks, param);
                             break;
 
                 case '5': case '7': case '8': case '9':
                             S_LOG(LOGGER_DEBUG, "%c ", ch);
-                            ke->code = map_fk(ch);
                             sm->state = S21;
+                            *ke = make_fk_event(ch, ke->modifier);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -519,15 +511,12 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             switch (ch)
             {
                 case 'P': case 'Q': case 'R': case 'S':
-                            ke->code = map_fk(ch);
-                            if (!ke->code) { return INPUT_ERROR; }
-
-                            handle_special_keys(input, hooks, param);
+                            *ke = make_fk_event(ch, ke->modifier);
+                            handle_keyboard(input, hooks, param);
                             break;
 
-                default:    ke->code = map_nav(ch);
-                            if (!ke->code) { return INPUT_ERROR; }
-                            handle_navigation(input, hooks, param);
+                default:    *ke = make_nav_event(ch, ke->modifier);
+                            handle_keyboard(input, hooks, param);
             }
             sm->state = S0;
             break;
@@ -542,7 +531,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
                 case '~':   S_LOG(LOGGER_DEBUG, "~\n");
                             sm->state = S0;
                             // S_LOG(LOGGER_DEBUG, "[%c %x]\n", ch, ch);
-                            handle_navigation(input, hooks, param);
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -560,7 +549,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             {
                 case '~':   S_LOG(LOGGER_DEBUG, "~\n");
                             sm->state = S0;
-                            handle_navigation(input, hooks, param);
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -576,7 +565,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
 
                 case '~':   S_LOG(LOGGER_DEBUG, "~\n");
                             sm->state = S0;
-                            handle_special_keys(input, hooks, param);
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -594,8 +583,7 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             {
                 case '~':   S_LOG(LOGGER_DEBUG, "~\n");
                             sm->state = S0;
-                            handle_special_keys(input, hooks, param);
-                            // handle_special_keys(input, hooks, param);
+                            handle_keyboard(input, hooks, param);
                             break;
 
                 default:    FEED_ERROR(ch);
@@ -603,10 +591,9 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks,
             break;
 
         case S24:
-            ke->code = map_fk(ch);
-            if (!ke->code) { return INPUT_ERROR; }
             sm->state = S0;
-            handle_special_keys(input, hooks, param);
+            *ke = make_fk_event(ch, ke->modifier);
+            handle_keyboard(input, hooks, param);
             break;
 
         default:    FEED_ERROR(ch);
@@ -688,18 +675,6 @@ static void handle_keyboard(input_t *const input, const input_hooks_t *const hoo
 }
 
 
-static void handle_special_keys(input_t *const input, const input_hooks_t *const hooks, void *const param)
-{
-    hooks->on_special_key(&input->keystroke_mode.keystroke, param);
-}
-
-
-static void handle_navigation(input_t *const input, const input_hooks_t *const hooks, void *const param)
-{
-    hooks->on_navigation(&input->keystroke_mode.keystroke, param);
-}
-
-
 static mouse_event_t decode_mouse_event(unsigned char buffer[static 3])
 {
     mouse_event_t event = {
@@ -731,24 +706,6 @@ static void print_mouse_event(const mouse_event_t *const event)
 }
 
 
-static void setup_signal_handlers(void)
-{
-    // Set sigint handler
-    struct sigaction sa;
-    sa.sa_sigaction = (void*) SIG_IGN; (void) handle_sigint;
-    sa.sa_flags = 0; // No special flags
-    sigemptyset(&sa.sa_mask);
-    sigaction(SIGINT, &sa, NULL);
-}
-
-// Signal handler for SIGINT (Ctrl+C)
-static void handle_sigint(int sig, siginfo_t *info, void *ctx)
-{
-    (void) sig; (void) info; (void) ctx;
-    s_sm.sigint = true;
-}
-
-
 static bool is_upper(int ch)
 {
     return ('A' <= ch && ch <= 'Z');
@@ -757,41 +714,81 @@ static bool is_upper(int ch)
 
 static bool is_control_char(int ch)
 {
-    return (ch < '0' || ch >= 0x7f/*BACKSPACE*/);
+    return (0 <= ch && ch <= 31) || ch == 127;
 }
 
 
-static keycode_t map_ascii(char ch)
+static input_modifier_t map_ctrl_shft_mod(int ch)
+{
+    input_modifier_t mod = 0;
+    mod |= (is_upper(ch) || strchr("~!@#$%^&*()_+{}|:\"<>?", ch)) ? MOD_SHIFT : 0;
+    mod |= is_control_char(ch) ? MOD_CTRL : 0;
+    return mod;
+}
+
+
+static keystroke_event_t make_ascii_event(int ch)
+{
+    return (keystroke_event_t){
+        .stroke = ch,
+        .code = map_ascii(ch),
+        .modifier = map_ctrl_shft_mod(ch),
+    };
+}
+
+
+static keystroke_event_t make_nav_event(int ch, input_modifier_t mod)
+{
+    return (keystroke_event_t){
+        .stroke = '\0',
+        .code = map_nav(ch),
+        .modifier = mod,
+    };
+}
+
+
+static keystroke_event_t make_fk_event(int ch, input_modifier_t mod)
+{
+    return (keystroke_event_t){
+        .stroke = '\0',
+        .code = map_fk(ch),
+        .modifier = mod,
+    };
+}
+
+
+static keycode_t map_ascii(int ch)
 {
     ch = tolower(ch);
-    if ('0' <= ch && ch <= '9')   return KEY_O + (ch - '0');
-    if ('a' <= ch && ch <= 'z')   return KEY_A + (ch - 'a');
-    if ('\x1b' == ch)             return KEY_ESC;
-    if ('\n' == ch)               return KEY_RETURN;
-    if ('\x7f' == ch)             return KEY_BACKSPACE;
-    if (' ' == ch)                return KEY_SPACE;
-    if ('\t' == ch)               return KEY_TAB;
-    if ('~' == ch || '`' == ch)   return KEY_BACKTICK;
-    if (':' == ch || ';' == ch)   return KEY_SEMICOLON;
-    if ('"' == ch || '\''== ch)   return KEY_QUOTE;
-    if ('<' == ch || ',' == ch)   return KEY_COMMA;
-    if ('>' == ch || '.' == ch)   return KEY_PERIOD;
-    if ('/' == ch || '?' == ch)   return KEY_SLASH;
-    if ('-' == ch || '_' == ch)   return KEY_MINUS;
-    if ('=' == ch || '+' == ch)   return KEY_PLUS;
-    if ('[' == ch || '{' == ch)   return KEY_SQBR_OPEN;
-    if (']' == ch || '}' == ch)   return KEY_SQBR_CLOSE;
-    if ('\\' == ch || '|' == ch)  return KEY_BACK_SLASH;
-    if ('!' == ch)                return KEY_1;
-    if ('@' == ch)                return KEY_2;
-    if ('#' == ch)                return KEY_3;
-    if ('$' == ch)                return KEY_4;
-    if ('%' == ch)                return KEY_5;
-    if ('^' == ch)                return KEY_6;
-    if ('&' == ch)                return KEY_7;
-    if ('*' == ch)                return KEY_8;
-    if ('(' == ch)                return KEY_9;
-    if (')' == ch)                return KEY_0;
+    if ('0' <= ch && ch <= '9')      return KEY_O + (ch - '0');
+    if ('a' <= ch && ch <= 'z')      return KEY_A + (ch - 'a');
+    if ('\x1b' == ch)                return KEY_ESC;
+    if ('\n' == ch)                  return KEY_RETURN;
+    if ('\x7f' == ch)                return KEY_BACKSPACE;
+    if ('\x0' <= ch && ch < '\x20')  return KEY_A + ch - 1;
+    if (' ' == ch)                   return KEY_SPACE;
+    if ('\t' == ch)                  return KEY_TAB;
+    if ('~' == ch || '`' == ch)      return KEY_BACKTICK;
+    if (':' == ch || ';' == ch)      return KEY_SEMICOLON;
+    if ('"' == ch || '\''== ch)      return KEY_QUOTE;
+    if ('<' == ch || ',' == ch)      return KEY_COMMA;
+    if ('>' == ch || '.' == ch)      return KEY_PERIOD;
+    if ('/' == ch || '?' == ch)      return KEY_SLASH;
+    if ('-' == ch || '_' == ch)      return KEY_MINUS;
+    if ('=' == ch || '+' == ch)      return KEY_PLUS;
+    if ('[' == ch || '{' == ch)      return KEY_SQBR_OPEN;
+    if (']' == ch || '}' == ch)      return KEY_SQBR_CLOSE;
+    if ('\\' == ch || '|' == ch)     return KEY_BACK_SLASH;
+    if ('!' == ch)                   return KEY_1;
+    if ('@' == ch)                   return KEY_2;
+    if ('#' == ch)                   return KEY_3;
+    if ('$' == ch)                   return KEY_4;
+    if ('%' == ch)                   return KEY_5;
+    if ('^' == ch)                   return KEY_6;
+    if ('&' == ch)                   return KEY_7;
+    if ('*' == ch)                   return KEY_8;
+    if ('(' == ch)                   return KEY_9;
+    if (')' == ch)                   return KEY_0;
     return 0;
 }
 
@@ -800,14 +797,14 @@ static keycode_t map_nav(int ch)
 {
     switch (ch)
     {
-        case '5': S_LOG(LOGGER_DEBUG, "PAGE UP ");  return KEY_PAGE_UP;
-        case '6': S_LOG(LOGGER_DEBUG, "PAGE DOWN ");  return KEY_PAGE_DOWN;
-        case 'A': S_LOG(LOGGER_DEBUG, "UP ");  return KEY_UP;
-        case 'B': S_LOG(LOGGER_DEBUG, "DOWN ");  return KEY_DOWN;
-        case 'C': S_LOG(LOGGER_DEBUG, "RIGHT ");  return KEY_RIGHT;
-        case 'D': S_LOG(LOGGER_DEBUG, "LEFT ");  return KEY_LEFT;
-        case 'H': S_LOG(LOGGER_DEBUG, "HOME");  return KEY_HOME;
-        case 'F': S_LOG(LOGGER_DEBUG, "END");  return KEY_END;
+        case '5': S_LOG(LOGGER_DEBUG, "PAGE UP ");   return KEY_PAGE_UP;
+        case '6': S_LOG(LOGGER_DEBUG, "PAGE DOWN "); return KEY_PAGE_DOWN;
+        case 'A': S_LOG(LOGGER_DEBUG, "UP ");        return KEY_UP;
+        case 'B': S_LOG(LOGGER_DEBUG, "DOWN ");      return KEY_DOWN;
+        case 'C': S_LOG(LOGGER_DEBUG, "RIGHT ");     return KEY_RIGHT;
+        case 'D': S_LOG(LOGGER_DEBUG, "LEFT ");      return KEY_LEFT;
+        case 'H': S_LOG(LOGGER_DEBUG, "HOME ");      return KEY_HOME;
+        case 'F': S_LOG(LOGGER_DEBUG, "END ");       return KEY_END;
     }
     S_LOG(LOGGER_CRITICAL, "PARSE ERROR: wrong nav key!\n");
     return 0;
