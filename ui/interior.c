@@ -1,5 +1,6 @@
 #include "interior.h"
 #include "interior_layout.h"
+#include "utils.h"
 
 
 interior_t *interior_alloc(const interior_opts_t *const opts, Arena *const arena)
@@ -88,4 +89,49 @@ void interior_release(interior_t *const interior, const disp_pos_t pos, const in
 {
     assert(interior);
     interior->impl.release(interior, pos, btn);
+}
+
+
+void interior_keystroke(interior_t *const interior, const keystroke_event_t *const event)
+{
+    assert(interior);
+    interior->impl.keystroke(interior, event);
+}
+
+
+void interior_recv_focus(interior_t *const interior)
+{
+    UNUSED(interior);
+    interior->impl.recv_focus(interior);
+}
+
+
+void interior_lost_focus(interior_t *const interior)
+{
+    UNUSED(interior);
+    interior->impl.lost_focus(interior);
+}
+
+
+void interior_keystroke_stub(interior_t *const interior, const keystroke_event_t *const event)
+{
+    UNUSED(interior, event);
+}
+
+
+void interior_scroll_stub(interior_t *const interior, const disp_pos_t pos, const int direction)
+{
+    UNUSED(interior, pos, direction);
+}
+
+
+void interior_press_release_stub(interior_t *const interior, const disp_pos_t pos, const int btn)
+{
+    UNUSED(interior, pos, btn);
+}
+
+
+void interior_focus_stub(interior_t *const interior)
+{
+    UNUSED(interior);
 }

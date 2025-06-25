@@ -10,6 +10,7 @@ typedef struct
     Arena    arena;   /* arena that is used for creating panels */
     dynarr_t *panels; /* storage for panel references */
     panel_t  *last_hovered;
+    panel_t  *focused; /* panel that has focus (type events will go there) */
 }
 panel_manager_t;
 
@@ -21,7 +22,13 @@ void pm_hover(panel_manager_t *const pm, const disp_pos_t pos);
 void pm_press(panel_manager_t *const pm, const disp_pos_t pos, const int btn);
 void pm_release(panel_manager_t *const pm, const disp_pos_t pos, const int btn);
 void pm_scroll(panel_manager_t *const pm, const disp_pos_t pos, const int dir);
+void pm_keystroke(panel_manager_t *const pm, const keystroke_event_t *const event);
 panel_t *pm_peek_panel(panel_manager_t *const pm, const disp_pos_t pos);
+panel_t *pm_get_focused_panel(panel_manager_t *const pm);
+void pm_set_focused_panel(panel_manager_t *const pm, panel_t *const panel);
+void pm_clear_focus(panel_manager_t *const pm);
+void pm_focus_next_panel(panel_manager_t *const pm);
+void pm_focus_prev_panel(panel_manager_t *const pm);
 void pm_render(const panel_manager_t *const pm, display_t *const display);
 void pm_deinit(panel_manager_t *const pm);
 

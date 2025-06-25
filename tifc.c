@@ -8,9 +8,9 @@
 #include "logger.h"
 #include "panel.h"
 #include "ui.h"
-#include "composite_interior.h"
-#include "view_interior.h"
-#include "text_input_field_interior.h"
+#include "composite.h"
+#include "view.h"
+#include "text_input_field.h"
 
 #include <locale.h>
 #include <stddef.h>
@@ -55,6 +55,7 @@ static int tifc_event_loop(void)
         .data = &tifc.ui,
         .hook = ui_resize_hook,
     };
+    display_hide_cursor();
     display_set_resize_handler(&tifc.display, resize_hook);
     tifc_create_ui_layout(&tifc);
 
@@ -66,7 +67,7 @@ static int tifc_event_loop(void)
         tifc_render(&tifc);
         input_hooks_t *hooks = &tifc.ui.hooks;
         exit_status = input_handle_events(&tifc.input, hooks, &tifc.ui);
-        if (0 != exit_status)
+        if (0 != exit_status || tifc.ui.exit_requested)
         {
             display_erase();
             break;
@@ -76,6 +77,7 @@ static int tifc_event_loop(void)
     (void) default_render;
 
     tifc_deinit(&tifc);
+    display_show_cursor();
     return exit_status;
 }
 
@@ -106,7 +108,7 @@ static void tifc_create_ui_layout(tifc_t *const tifc)
 
 static void make_view_panel(tifc_t *const tifc)
 {
-    view_interior_opts_t view = {
+    view_opts_t view = {
         .interior = {
             .impl = view_interior_get_impl(),
             .layout = {
@@ -161,7 +163,7 @@ static void make_view_panel(tifc_t *const tifc)
 
 static void make_composite_panel(tifc_t *const tifc)
 {
-    view_interior_opts_t view = {
+    view_opts_t view = {
         .interior = {
             .impl = view_interior_get_impl(),
             .layout = {
@@ -201,7 +203,7 @@ static void make_composite_panel(tifc_t *const tifc)
             .render = size_t_array_render,
         },
     };
-    button_interior_opts_t btn = {
+    button_opts_t btn = {
         .interior = {
             .impl = button_interior_get_impl(),
             .layout = {
@@ -237,7 +239,7 @@ static void make_composite_panel(tifc_t *const tifc)
             .when = BUTTON_ON_RELEASE,
         }
     };
-    text_input_field_interior_opts_t inp = {
+    text_input_field_opts_t inp = {
         .interior = {
             .impl = text_input_field_interior_get_impl(),
             .layout = {
@@ -274,7 +276,7 @@ static void make_composite_panel(tifc_t *const tifc)
         .max_length = 12,
     };
 
-    composite_interior_opts_t comp = {
+    composite_opts_t comp = {
         .interior = {
             .impl = composite_interior_get_impl(),
             .layout = {

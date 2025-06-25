@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "display_types.h"
+#include "input.h"
 #include "logger.h"
 #include "panel.h"
 #include "display.h"
@@ -8,25 +9,31 @@
 //
 // Mouse events
 //
-static void on_hover(const mouse_event_t *const, void *const);
-static void on_press(const mouse_event_t *const, void *const);
-static void on_release(const mouse_event_t *const, void *const);
-static void on_drag_begin(const mouse_event_t *const, void *const);
-static void on_drag(const mouse_event_t *const, const mouse_event_t *const, void *const);
-static void on_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
-static void on_scroll(const mouse_event_t *const, void *const);
+static void ui_hover(const mouse_event_t *const, void *const);
+static void ui_press(const mouse_event_t *const, void *const);
+static void ui_release(const mouse_event_t *const, void *const);
+static void ui_drag_begin(const mouse_event_t *const, void *const);
+static void ui_drag(const mouse_event_t *const, const mouse_event_t *const, void *const);
+static void ui_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
+static void ui_scroll(const mouse_event_t *const, void *const);
+
+//
+// Keyboard
+//
+static void ui_keystroke(const keystroke_event_t *const, void *const);
 
 static input_hooks_t hooks_init(void)
 {
     return (input_hooks_t)
     {
-        .on_hover = on_hover,
-        .on_press = on_press,
-        .on_release = on_release,
-        .on_drag_begin = on_drag_begin,
-        .on_drag = on_drag,
-        .on_drag_end = on_drag_end,
-        .on_scroll = on_scroll
+        .on_hover = ui_hover,
+        .on_press = ui_press,
+        .on_release = ui_release,
+        .on_drag_begin = ui_drag_begin,
+        .on_drag = ui_drag,
+        .on_drag_end = ui_drag_end,
+        .on_scroll = ui_scroll,
+        .on_keystroke = ui_keystroke,
     };
 }
 
@@ -70,8 +77,7 @@ void ui_resize_hook(const display_t *const display, void *data)
 }
 
 
-void ui_render(const ui_t *const ui,
-               display_t *const display)
+void ui_render(const ui_t *const ui, display_t *const display)
 {
     assert(ui);
     assert(display);
@@ -89,7 +95,7 @@ void ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
 }
 
 
-static void on_hover(const mouse_event_t *const hover, void *const param)
+static void ui_hover(const mouse_event_t *const hover, void *const param)
 {
     ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::hover, at %u, %u\n",
@@ -99,7 +105,7 @@ static void on_hover(const mouse_event_t *const hover, void *const param)
 }
 
 
-static void on_press(const mouse_event_t *const press, void *const param)
+static void ui_press(const mouse_event_t *const press, void *const param)
 {
     ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::press %d, at %u, %u\n",
@@ -109,7 +115,7 @@ static void on_press(const mouse_event_t *const press, void *const param)
 }
 
 
-static void on_release(const mouse_event_t *const press, void *const param)
+static void ui_release(const mouse_event_t *const press, void *const param)
 {
     ui_t *ui = param;
     S_LOG(LOGGER_DEBUG, "UI::release %d, at %u, %u\n",
@@ -119,27 +125,27 @@ static void on_release(const mouse_event_t *const press, void *const param)
 }
 
 
-static void on_drag_begin(const mouse_event_t *const begin,
+static void ui_drag_begin(const mouse_event_t *const begin,
         void *const param)
 {
-    (void) param;
+    UNUSED(param);
     S_LOG(LOGGER_DEBUG, "UI::drag %d begin, at %u, %u\n",
         begin->mouse_button, begin->position.x, begin->position.y);
 }
 
 
-static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param)
+static void ui_drag(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param)
 {
-    (void) param;
+    UNUSED(param);
     S_LOG(LOGGER_DEBUG, "UI::drag %d drag moving to %u, %u\n",
         begin->mouse_button, moved->position.x, moved->position.y);
 }
 
 
-static void on_drag_end(const mouse_event_t *const begin,
+static void ui_drag_end(const mouse_event_t *const begin,
         const mouse_event_t *const end, void *const param)
 {
-    (void) param;
+    UNUSED(param);
     S_LOG(LOGGER_DEBUG, "UI::drag %d from %u, %u to %u, %u\n",
         begin->mouse_button,
         begin->position.x, begin->position.y,
@@ -147,7 +153,7 @@ static void on_drag_end(const mouse_event_t *const begin,
 }
 
 
-static void on_scroll(const mouse_event_t *const scroll, void *const param)
+static void ui_scroll(const mouse_event_t *const scroll, void *const param)
 {
     ui_t *ui = param;
 
@@ -155,4 +161,20 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
         scroll->mouse_button, scroll->position.x, scroll->position.y);
 
     pm_scroll(&ui->pm, scroll->position, scroll->mouse_button);
+}
+
+
+static void ui_keystroke(const keystroke_event_t *const event, void *const param)
+{
+    ui_t *ui = param;
+
+    S_LOG(LOGGER_DEBUG, "UI::keystroke %x(%d)\n mod:%x\n", event->stroke, event->code, event->modifier);
+
+    if (KEY_D == event->code && MOD_CTRL == event->modifier)
+    {
+        ui->exit_requested = true;
+        return;
+    }
+
+    pm_keystroke(&ui->pm, event);
 }

@@ -71,6 +71,7 @@ void panel_recalculate(panel_t *panel, disp_area_t *const bounds)
 void panel_render(const panel_t *panel, display_t *const display)
 {
     assert(panel);
+    assert(display);
 
     // dont render panel if has no valid area
     if (IS_INVALID_AREA(&panel->area)) return;
@@ -118,6 +119,24 @@ void panel_press(panel_t *const panel, const disp_pos_t pos, const int btn)
 void panel_release(panel_t *const panel, const disp_pos_t pos, const int btn)
 {
     interior_release(panel->interior, pos, btn);
+}
+
+
+void panel_keystroke(panel_t *const panel, const keystroke_event_t *const event)
+{
+    interior_keystroke(panel->interior, event);
+}
+
+
+void panel_recv_focus(panel_t *const panel)
+{
+    interior_recv_focus(panel->interior);
+}
+
+
+void panel_lost_focus(panel_t *const panel)
+{
+    interior_lost_focus(panel->interior);
 }
 
 

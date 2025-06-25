@@ -3,7 +3,7 @@
 
 #include "interior.h"
 
-typedef struct button_interior button_interior_t;
+typedef struct button button_t;
 
 typedef enum
 {
@@ -25,7 +25,7 @@ typedef struct
     interior_opts_t interior;
     button_action_t action;
 }
-button_interior_opts_t;
+button_opts_t;
 
 
 interior_interface_t button_interior_get_impl(void);

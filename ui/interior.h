@@ -3,15 +3,9 @@
 
 #include "arena.h"
 #include "display.h"
+#include "input.h"
 #include "interior_layout.h"
-
-
-#define _UNUSED_1(arg) (void) arg
-#define _UNUSED_2(arg1, arg2) _UNUSED_1(arg1); _UNUSED_1(arg2)
-#define _UNUSED_3(arg1, arg2, arg3) _UNUSED_2(arg1, arg2); _UNUSED_1(arg3)
-#define _CONCAT(a, b) a ## b
-#define _UNUSED_COUNT(PREFIX, _1, _2, _3, NUM, ...) _CONCAT(PREFIX, NUM)
-#define UNUSED(...) _UNUSED_COUNT(_UNUSED_,__VA_ARGS__, 3, 2, 1)(__VA_ARGS__)
+#include "utils.h"
 
 /*
 * This is a component of a panel that defines the inner content.
@@ -29,9 +23,12 @@ typedef struct
     void (*enter) (interior_t *const interior, const disp_pos_t pos);
     void (*hover) (interior_t *const interior, const disp_pos_t pos);
     void (*leave) (interior_t *const interior, const disp_pos_t pos);
+    void (*recv_focus) (interior_t *const interior);
+    void (*lost_focus) (interior_t *const interior);
     void (*scroll) (interior_t *const interior, const disp_pos_t pos, const int dir);
     void (*press) (interior_t *const interior, const disp_pos_t pos, const int btn);
     void (*release) (interior_t *const interior, const disp_pos_t pos, const int btn);
+    void (*keystroke) (interior_t *const interior, const keystroke_event_t *const event);
     /* ... */
 }
 interior_interface_t;
@@ -63,4 +60,14 @@ void interior_leave(interior_t *const interior, const disp_pos_t pos);
 void interior_scroll(interior_t *const interior, const disp_pos_t pos, const int direction);
 void interior_press(interior_t *const interior, const disp_pos_t pos, const int btn);
 void interior_release(interior_t *const interior, const disp_pos_t pos, const int btn);
+void interior_keystroke(interior_t *const interior, const keystroke_event_t *const event);
+void interior_recv_focus(interior_t *const interior);
+void interior_lost_focus(interior_t *const interior);
+
+/* For ignoring key type events */
+void interior_scroll_stub(interior_t *const interior, const disp_pos_t pos, const int direction);
+void interior_press_release_stub(interior_t *const interior, const disp_pos_t pos, const int btn);
+void interior_keystroke_stub(interior_t *const interior, const keystroke_event_t *const event);
+void interior_focus_stub(interior_t *const interior);
+
 #endif/*_INTERIOR_H_*/

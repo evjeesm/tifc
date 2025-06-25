@@ -2,6 +2,7 @@
 #define _PANEL_H_
 
 #include "display.h"
+#include "input.h"
 #include "interior.h"
 
 typedef struct
@@ -40,6 +41,11 @@ void panel_leave(panel_t *const panel, const disp_pos_t pos);
 void panel_scroll(panel_t *const panel, const disp_pos_t pos, const int direction);
 void panel_press(panel_t *const panel, const disp_pos_t pos, const int btn);
 void panel_release(panel_t *const panel, const disp_pos_t pos, const int btn);
+void panel_keystroke(panel_t *const panel, const keystroke_event_t *const event);
+void panel_special_key(panel_t *const panel, const keystroke_event_t *const event);
+void panel_navigation(panel_t *const panel, const keystroke_event_t *const event);
+void panel_recv_focus(panel_t *const panel);
+void panel_lost_focus(panel_t *const panel);
 
 /* TODO: add other event handlers by panel interface */
 

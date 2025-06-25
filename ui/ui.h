@@ -11,6 +11,7 @@ typedef struct
 {
     input_hooks_t hooks;
     panel_manager_t pm;
+    bool exit_requested;
 }
 ui_t;
 

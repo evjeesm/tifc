@@ -1,7 +1,10 @@
 #include "panel_manager.h"
+#include "interior.h"
+#include "utils.h"
 
 #include "display_types.h"
 #include "dynarr.h"
+#include "input.h"
 #include "logger.h"
 #include "panel.h"
 
@@ -80,7 +83,11 @@ void pm_press(panel_manager_t *const pm, const disp_pos_t pos, const int btn)
 {
     assert(pm);
     panel_t *cur_pressed = pm_peek_panel(pm, pos);
-    if (cur_pressed) panel_press(cur_pressed, pos, btn);
+    if (cur_pressed)
+    {
+        panel_press(cur_pressed, pos, btn);
+        pm_set_focused_panel(pm, cur_pressed);
+    }
 }
 
 
@@ -97,6 +104,15 @@ void pm_scroll(panel_manager_t *const pm, const disp_pos_t pos, const int dir)
     assert(pm);
     panel_t *cur_scrolled = pm_peek_panel(pm, pos);
     if (cur_scrolled) panel_scroll(cur_scrolled, pos, dir);
+}
+
+
+void pm_keystroke(panel_manager_t *const pm, const keystroke_event_t *const event)
+{
+    assert(pm);
+    panel_t *focused = pm_get_focused_panel(pm);
+    if (focused) panel_keystroke(focused, event);
+    // TODO: what if navigation will trigger a change of focused panel?
 }
 
 
@@ -121,6 +137,42 @@ panel_t *pm_peek_panel(panel_manager_t *const pm, const disp_pos_t pos)
 }
 
 
+void pm_set_focused_panel(panel_manager_t *const pm, panel_t *const panel)
+{
+    assert(pm);
+    pm->focused = panel;
+}
+
+
+panel_t *pm_get_focused_panel(panel_manager_t *const pm)
+{
+    assert(pm);
+    return pm->focused;
+}
+
+
+void pm_clear_focus(panel_manager_t *const pm)
+{
+    assert(pm);
+
+    pm->focused = NULL;
+}
+
+
+void pm_focus_next_panel(panel_manager_t *const pm)
+{
+    UNUSED(pm);
+    TODO("Unimplemented yet!");
+}
+
+
+void pm_focus_prev_panel(panel_manager_t *const pm)
+{
+    UNUSED(pm);
+    TODO("Unimplemented yet!");
+}
+
+
 void pm_render(const panel_manager_t *const pm, display_t *const display)
 {
     assert(pm);
@@ -140,7 +192,8 @@ void pm_deinit(panel_manager_t *const pm)
 
 
 static int delete_panel(void *const panel, void *const _)
-{ (void) _;
+{
+    UNUSED(_);
     panel_deinit(panel);
     return 0;
 }
