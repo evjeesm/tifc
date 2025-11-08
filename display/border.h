@@ -20,7 +20,7 @@ typedef struct
             wchar_t vertical;
             wchar_t horizontal;
         };
-        wchar_t _[BORDER_SET_SIZE];
+        wchar_t _[BORDER_SET_SIZE + 1];
     };
 }
 border_set_t;
