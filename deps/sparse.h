@@ -1,1 +1,1 @@
-./sparse/src/sparse.h
+sparse/src/sparse.h

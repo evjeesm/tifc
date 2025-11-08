@@ -1,1 +1,1 @@
-./dynarr/vector/src/vector.h
+dynarr/vector/src/vector.h

@@ -1,1 +1,1 @@
-./hashmap/src/hash.h
+hashmap/src/hash.h
