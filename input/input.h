@@ -237,7 +237,7 @@ typedef struct input_hooks
 input_hooks_t;
 
 
-input_t input_init(void);
+void input_init(input_t *const input);
 void input_deinit(input_t *const input);
 void input_enable_mouse(void);
 void input_disable_mouse(void);

@@ -48,8 +48,7 @@ static keycode_t map_ascii(int ch);
 static keycode_t map_nav(int ch);
 static keycode_t map_fk(int ch);
 
-
-input_t input_init(void)
+void input_init(input_t *const input)
 {
     int epfd = epoll_create1(0);
     if (-1 == epfd)
@@ -81,8 +80,7 @@ input_t input_init(void)
         exit(EXIT_FAILURE);
     }
 
-
-    return (input_t) {
+    *input = (input_t) {
         .queue = queue,
         .epfd = epfd,
         .descriptors = descriptors,

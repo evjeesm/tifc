@@ -121,7 +121,8 @@ int main(void)
         .on_keystroke = on_keystroke,
     };
     input_enable_mouse();
-    input_t input = input_init();
+    input_t input;
+    input_init(&input);
     while (1)
     {
         int status = input_handle_events(&input, &hooks, NULL);

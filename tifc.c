@@ -56,9 +56,8 @@ static tifc_t tifc_init(void)
     display_enter_alternate_screen();
     setlocale(LC_ALL, "");
     input_enable_mouse();
-    tifc_t tifc = {
-        .input = input_init(),
-    };
+    tifc_t tifc = { 0 };
+    input_init(&tifc.input);
     return tifc;
 }
 
