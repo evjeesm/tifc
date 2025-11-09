@@ -1,5 +1,5 @@
 #!/bin/sh
-#set -xe
+# set -xe
 
 ROOT_DIR="$(dirname $0)"
 CC="gcc"
@@ -94,7 +94,8 @@ build_objects() {
         # source -> object
         local obj=$(echo ${src} | sed 's/\.c/\.o/g')
         local obj_path="${BUILD_DIR}/${obj}"
-        local deps=$( collect_dependencies ${src} )
+        local deps=""
+        deps=$(collect_dependencies ${src} "${deps}")
         local sum="${STAMP_DIR}/${obj}.sha1"
 
         # append to object list
@@ -129,7 +130,8 @@ gen_compile_commands() {
             # source -> object
             local obj=$(echo ${src} | sed 's/\.c/\.o/g')
             local obj_path="${BUILD_DIR}/${obj}"
-            local deps=$( collect_dependencies ${src} )
+            # local deps=""
+            # deps=$( collect_dependencies ${src} ${deps})
 
             # compile
             local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
@@ -153,13 +155,35 @@ collect_tests() {
 collect_dependencies() {
     [ $# = 0 ] && { echo "! collect_dependencies() expects source. " >&2 && exit 1 ;}
 
+    [ $# = 1 ] && { echo "! collect_dependencies() expects dependency_list " >&2 && exit 1 ;}
+
+    local list
+    list=$2
+
     # get list of header separated with space
-    local dependencies=$( ${CC} ${CPPFLAGS} -MM $1 | tr -d '\n' \
+    local dependencies
+    dependencies=$( ${CC} ${CPPFLAGS} -MM $1 | tr -d '\n' \
         | sed 's/ [\]//g;' \
         | sed 's/.*: //g' \
         | xargs -n1 | sort -u | xargs )
 
-    echo ${dependencies}
+    local collected
+    for dep in $dependencies; do
+        collected="false"
+        for list_dep in $list; do
+            if [ "$dep" = "$list_dep" ]; then
+                # echo "$dep already collected" >&2
+                collected="true"
+                break
+            fi
+        done
+        if [ "$collected" = "false" ]; then
+            list="$list $dep"
+            # echo "Collecting $dep" >&2
+            list=$(collect_dependencies ${dep} "$list")
+        fi
+    done
+    echo ${list}
 }
 
 h2c() {
@@ -179,7 +203,8 @@ build_executable() {
     local target=$( echo "${source}" | sed 's/\.c//')
     echo "Target: $target" >&2
 
-    local deps=$( collect_dependencies ${source} )
+    local deps=""
+    deps=$( collect_dependencies ${source} "${deps}")
     local sources="${source} $( h2c ${deps} )"
     local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~_$]\+\)@${BUILD_DIR}/\1@g")
     local sum="${STAMP_DIR}/${target}.sha1"

@@ -53,62 +53,60 @@ typedef struct
 }
 resize_hook_with_data_t;
 
+display_t *display_create(void);
+void display_destroy(display_t *const display);
+
 void display_hide_cursor(void);
 void display_show_cursor(void);
 
 void display_enter_alternate_screen(void);
 void display_leave_alternate_screen(void);
 
-void
-display_set_char(display_t *const display,
+void display_set_char(display_t *const display,
         wint_t ch,
         disp_pos_t pos);
-void 
-display_set_style(display_t *const display,
+
+void display_set_style(display_t *const display,
         style_t style,
         disp_pos_t pos);
-void
-display_draw_border(display_t *const display,
+
+void display_draw_border(display_t *const display,
         style_t style,
         border_set_t border,
         disp_area_t area);
-void
-display_fill_area(display_t *const display,
+
+void display_fill_area(display_t *const display,
         style_t style,
         disp_area_t area);
-void
-display_draw_string(display_t *const display,
+
+void display_draw_string(display_t *const display,
         unsigned int size,
         const char string[size],
         disp_pos_t pos,
         style_t style);
-void
-display_draw_string_centered(display_t *const display,
+
+void display_draw_string_centered(display_t *const display,
         unsigned int size,
         const char string[size],
         disp_area_t area,
         style_t style);
 
-void
-display_draw_string_aligned(display_t *const display,
+void display_draw_string_aligned(display_t *const display,
         unsigned int size,
         const char string[size],
         disp_area_t area,
         style_t style,
         layout_align_t text_align);
 
-void
-display_render(display_t *const display);
+void display_render(display_t *const display);
 
-void
-display_render_area(display_t *const display,
-        disp_area_t area);
-void
-display_clear_area(display_t *const display,
+void display_render_area(display_t *const display,
         disp_area_t area);
 
-void 
-display_set_resize_handler(display_t *const display,
+void display_clear_area(display_t *const display,
+        disp_area_t area);
+
+void display_set_resize_handler(display_t *const display,
                            resize_hook_with_data_t resize_hook);
 
 void display_clear(display_t *const display);

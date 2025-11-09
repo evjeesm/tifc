@@ -34,7 +34,6 @@ static int tifc_event_loop(void)
 
     while (1)
     {
-        // input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 3});
         tifc_render(&tifc);
         input_hooks_t *hooks = &tifc.ui.hooks;
         exit_status = input_handle_events(&tifc.input, hooks, &tifc.ui);
