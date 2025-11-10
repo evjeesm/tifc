@@ -10,10 +10,13 @@ STAMP_DIR="${BUILD_DIR}/.stamps"
 list() { echo $@ ;}
 
 SUBDIRS=$(list "
-    logger
-    display
-    input
-    ui
+    core
+    core/display
+    core/input
+    core/logger
+    core/ui
+
+    client
 ")
 
 CFLAGS=$(list "
@@ -50,8 +53,8 @@ LIBS=$(list "
 init_subdirs() {
     for dir in ${SUBDIRS}; do
         CPPFLAGS="${CPPFLAGS} -I${dir}"
-        mkdir -p ${BUILD_DIR}/$(basename $dir)
-        mkdir -p ${STAMP_DIR}/$(basename $dir)
+        mkdir -p ${BUILD_DIR}/${dir}
+        mkdir -p ${STAMP_DIR}/${dir}
     done
 }
 
@@ -105,7 +108,7 @@ build_objects() {
             # is newer source
             [ 0 = $( is_newer_source ${obj_path} ${deps}; echo $? ) ] && continue
         fi
- 
+
         # compile
         local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
         ${cmd}
@@ -282,7 +285,7 @@ main() {
             local target=${2:-'tifc'}
             case "$target" in
                 tifc)
-                    { build_executable 'tifc.c' ;}
+                    { build_executable 'core/tifc.c' ;}
                     [ $? != 0 ] && exit $?
                 ;;
                 tests)

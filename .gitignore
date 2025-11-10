@@ -14,10 +14,14 @@
 !deps/sparse
 !deps/circbuf
 
-!ui
-!display
-!input
-!logger
+!core
+!core/ui
+!core/display
+!core/input
+!core/logger
+
+!client
+
 
 # libs softlinks
 !deps/*.a
