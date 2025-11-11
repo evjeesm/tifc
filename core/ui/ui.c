@@ -37,12 +37,11 @@ static input_hooks_t hooks_init(void)
 }
 
 
-ui_t ui_init(void)
+void ui_init(ui_t *const ui)
 {
-    ui_t ui = {
+    *ui = (ui_t){
         .hooks = hooks_init(),
     };
-    return ui;
 }
 
 

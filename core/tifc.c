@@ -38,7 +38,7 @@ static int tifc_event_loop(void)
         tifc_render(&tifc);
         input_hooks_t *hooks = &tifc.ui.hooks;
         exit_status = input_handle_events(&tifc.input, hooks, &tifc.ui);
-        if (0 != exit_status /* || tifc.ui.exit_requested */)
+        if (0 != exit_status || tifc.ui.exit_requested )
         {
             display_erase();
             break;
@@ -58,6 +58,7 @@ static void tifc_init(tifc_t *const tifc)
     input_enable_mouse();
     *tifc = (tifc_t){ 0 };
     input_init(&tifc->input);
+    ui_init(&tifc->ui);
 }
 
 static void tifc_render(tifc_t *const tifc)
@@ -70,6 +71,7 @@ static void tifc_deinit(tifc_t *const tifc)
 {
     input_disable_mouse();
     input_deinit(&tifc->input);
+    ui_deinit(&tifc->ui);
     display_leave_alternate_screen();
 }
 

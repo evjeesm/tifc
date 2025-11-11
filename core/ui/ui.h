@@ -10,4 +10,8 @@ typedef struct
 }
 ui_t;
 
+void ui_init(ui_t *const ui);
+void ui_deinit(ui_t *const ui);
+void ui_recalculate(ui_t *const ui, const display_t *const display);
+
 #endif /* _UI_H_ */
