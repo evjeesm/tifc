@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 static int tifc_event_loop(void);
-static tifc_t tifc_init(void);
+static void tifc_init(tifc_t *const tifc);
 static void tifc_render(tifc_t *const tifc);
 static void tifc_deinit(tifc_t *const tifc);
 
@@ -23,7 +23,8 @@ int main(void)
 
 static int tifc_event_loop(void)
 {
-    tifc_t tifc = tifc_init();
+    tifc_t tifc;
+    tifc_init(&tifc);
     resize_hook_with_data_t resize_hook = {
         .data = &tifc.ui,
     };
@@ -50,14 +51,13 @@ static int tifc_event_loop(void)
 }
 
 
-static tifc_t tifc_init(void)
+static void tifc_init(tifc_t *const tifc)
 {
     display_enter_alternate_screen();
     setlocale(LC_ALL, "");
     input_enable_mouse();
-    tifc_t tifc = { 0 };
-    input_init(&tifc.input);
-    return tifc;
+    *tifc = (tifc_t){ 0 };
+    input_init(&tifc->input);
 }
 
 static void tifc_render(tifc_t *const tifc)
