@@ -35,12 +35,6 @@ CPPFLAGS=$(list "
     -Ideps
 ")
 
-SOURCES=$(list "
-    tifc.c
-    canvas.c
-    frame.c
-")
-
 LIBS=$(list "
     -lcircbuf_static
     -lhashmap_static
@@ -198,30 +192,49 @@ h2c() {
     echo ${dep_sources}
 }
 
-# Function takes executable source file path
-# and returns a compile command
+# Function takes list of sources to compile into a single executable,
+# name for the executable will be defined by stripping an extension from the first source provided
 build_executable() {
-    [ $# -eq 0 ] && { echo "! build_executable() expects source. " >&2 && exit 1 ;}
-    local source="$1"
-    local target=$( echo "${source}" | sed 's/\.c//')
+    [ $# -eq 0 ] && { echo "! build_executable() expects sources. " >&2 && exit 1 ;}
+    local target=$( echo "$1" | sed 's/\.c//')
+    local target_objects=""
     echo "Target: $target" >&2
 
-    local deps=""
-    deps=$( collect_dependencies ${source} "${deps}")
-    local sources="${source} $( h2c ${deps} )"
-    local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~_$]\+\)@${BUILD_DIR}/\1@g")
+    local objects_file=$(mktemp)
+    echo "Created objects_file: $objects_file" >&2
+
+    local tmp_file=$(mktemp)
+    echo "Created tmp_file: $tmp_file" >&2
+
+    local tmp_merge_file=$(mktemp)
+    echo "Created tmp_merge_file: $tmp_merge_file" >&2
+
+    for src in "$@"; do
+        local source="$src"
+        local deps=""
+        deps=$( collect_dependencies ${source} "${deps}")
+        local sources="${source} $( h2c ${deps} )"
+        local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~_$]\+\)@${BUILD_DIR}/\1@g;")
+        echo ${objects} | sed "s@ @\n@g" | sort -u - > ${tmp_file}
+        sort -m ${objects_file} ${tmp_file} > ${tmp_merge_file}
+        sort -u ${tmp_merge_file} > ${objects_file}
+
+        local compiled;
+        local status;
+
+        compiled=$( build_objects ${sources} )
+        status=$?
+        : echo "COMPILE STATUS = $status" >&2
+
+        [ "$status" != 0 ] && { return "$status" ;}
+
+        echo "Compiled: $compiled" >&2
+    done
+
+    target_objects=$(cat ${objects_file})
+    rm ${tmp_merge_file} ${tmp_file} ${objects_file}
+
     local sum="${STAMP_DIR}/${target}.sha1"
-
-    local compiled;
-    local status;
-
-    compiled=$( build_objects ${sources} )
-    status=$?
-    : echo "COMPILE STATUS = $status" >&2
-
-    [ "$status" != 0 ] && { return "$status" ;}
-
-    echo "Compiled: $compiled" >&2
     # is newer source
     if [ ${compiled} -eq 0 ] \
     && [ -e ${BUILD_DIR}/${target} ] \
@@ -237,8 +250,8 @@ build_executable() {
         | sed "s@\s\|\$@.sha1 @g" )
     sort -m -u -k2 ${obj_sums} -o ${sum}
 
-    # compile
-    local cmd="${CC} ${CPPFLAGS} ${CFLAGS} ${objects} -o ${BUILD_DIR}/${target} ${LIBS}"
+    # compile target
+    local cmd="${CC} ${CPPFLAGS} ${CFLAGS} ${target_objects} -o ${BUILD_DIR}/${target} ${LIBS}"
     ${cmd} || return $? # return on failure
     echo ${cmd} >&2
 
@@ -285,7 +298,7 @@ main() {
             local target=${2:-'tifc'}
             case "$target" in
                 tifc)
-                    { build_executable 'core/tifc.c' ;}
+                    { build_executable 'core/tifc.c' 'client/example_app.c' ;}
                     [ $? != 0 ] && exit $?
                 ;;
                 tests)
