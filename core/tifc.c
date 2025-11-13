@@ -1,7 +1,6 @@
 #include "tifc.h"
 #include "border.h"
 #include "display.h"
-#include "layout.h"
 #include "logger.h"
 #include "ui.h"
 #include "app.h"

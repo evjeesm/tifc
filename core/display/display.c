@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <assert.h>
 #include <stdarg.h>
-#include "layout.h"
 
 static int prev_buffer(const int active);
 static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b);
@@ -242,51 +241,51 @@ void display_draw_string_centered(display_t *const display, unsigned int size, c
         } \
     }
 
-void display_draw_string_aligned(display_t *const display,
-        unsigned int size,
-        const char string[size],
-        disp_area_t area,
-        style_t style,
-        layout_align_t text_align)
-{
-    assert(area.second.x <= display->size.x);
-    assert(area.second.y <= display->size.y);
-
-    unsigned int hmax = area.second.x - area.first.x + 1;
-    unsigned int vmax = area.second.y - area.first.y + 1;
-    disp_pos_t pos = {0};
-
-    if (LAYOUT_ALIGN_CENTER == text_align
-        || 0 == text_align)
-    {
-        CENT_VER CENT_HOR
-    }
-    else if (LAYOUT_ALIGN_TOP_H_CENTER == text_align)
-    {
-        CENT_HOR ALIGN_TOP
-    }
-    else if (LAYOUT_ALIGN_BOT_H_CENTER == text_align)
-    {
-        CENT_HOR ALIGN_BOT
-    }
-    else if (LAYOUT_ALIGN_LEFT_V_CENTER == text_align)
-    {
-        CENT_VER ALIGN_LEFT
-    }
-    else if (LAYOUT_ALIGN_RIGHT_V_CENTER == text_align)
-    {
-        CENT_VER ALIGN_RIGHT
-    }
-    else
-    {
-        if (LAYOUT_ALIGN_TOP & text_align)   { ALIGN_TOP   }
-        if (LAYOUT_ALIGN_BOT & text_align)   { ALIGN_BOT   }
-        if (LAYOUT_ALIGN_LEFT & text_align)  { ALIGN_LEFT  }
-        if (LAYOUT_ALIGN_RIGHT & text_align) { ALIGN_RIGHT }
-    }
-
-    display_draw_string(display, size, string, pos, style);
-}
+// void display_draw_string_aligned(display_t *const display,
+//         unsigned int size,
+//         const char string[size],
+//         disp_area_t area,
+//         style_t style,
+//         layout_align_t text_align)
+// {
+//     assert(area.second.x <= display->size.x);
+//     assert(area.second.y <= display->size.y);
+//
+//     unsigned int hmax = area.second.x - area.first.x + 1;
+//     unsigned int vmax = area.second.y - area.first.y + 1;
+//     disp_pos_t pos = {0};
+//
+//     if (LAYOUT_ALIGN_CENTER == text_align
+//         || 0 == text_align)
+//     {
+//         CENT_VER CENT_HOR
+//     }
+//     else if (LAYOUT_ALIGN_TOP_H_CENTER == text_align)
+//     {
+//         CENT_HOR ALIGN_TOP
+//     }
+//     else if (LAYOUT_ALIGN_BOT_H_CENTER == text_align)
+//     {
+//         CENT_HOR ALIGN_BOT
+//     }
+//     else if (LAYOUT_ALIGN_LEFT_V_CENTER == text_align)
+//     {
+//         CENT_VER ALIGN_LEFT
+//     }
+//     else if (LAYOUT_ALIGN_RIGHT_V_CENTER == text_align)
+//     {
+//         CENT_VER ALIGN_RIGHT
+//     }
+//     else
+//     {
+//         if (LAYOUT_ALIGN_TOP & text_align)   { ALIGN_TOP   }
+//         if (LAYOUT_ALIGN_BOT & text_align)   { ALIGN_BOT   }
+//         if (LAYOUT_ALIGN_LEFT & text_align)  { ALIGN_LEFT  }
+//         if (LAYOUT_ALIGN_RIGHT & text_align) { ALIGN_RIGHT }
+//     }
+//
+//     display_draw_string(display, size, string, pos, style);
+// }
 
 // void display_draw_data(display_t *const display, disp_area_t area, style_t style, const char *format, ...)
 // {
