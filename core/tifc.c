@@ -4,6 +4,7 @@
 #include "layout.h"
 #include "logger.h"
 #include "ui.h"
+#include "app.h"
 
 #include <locale.h>
 #include <stddef.h>
@@ -31,6 +32,9 @@ static int tifc_event_loop(void)
     display_hide_cursor();
     display_set_resize_handler(&tifc.display, resize_hook);
 
+    void *app_data = app_get_data();
+    app_init(app_data, &tifc);
+
     int exit_status = 0;
 
     while (1)
@@ -45,6 +49,7 @@ static int tifc_event_loop(void)
         }
     }
 
+    app_deinit(app_data, &tifc);
     tifc_deinit(&tifc);
     display_show_cursor();
     return exit_status;

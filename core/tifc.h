@@ -4,6 +4,7 @@
 #include "display.h"
 #include "input.h"
 #include "ui.h"
+#include "utils.h"
 
 typedef struct tifc
 {
