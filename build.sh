@@ -93,6 +93,9 @@ build_objects() {
         local obj_path="${BUILD_DIR}/${obj}"
         local deps=""
         deps=$(collect_dependencies ${src} "${deps}")
+        local status="$?"
+        [ $status -ne 0 ] && { exit $status ;}
+
         local sum="${STAMP_DIR}/${obj}.sha1"
 
         # append to object list
@@ -159,7 +162,16 @@ collect_dependencies() {
 
     # get list of header separated with space
     local dependencies
-    dependencies=$( ${CC} ${CPPFLAGS} -MM $1 | tr -d '\n' \
+    dependencies=$( ${CC} ${CPPFLAGS} -MM $1 )
+
+    local status="$?"
+    [ $status -ne 0 ] && {
+        echo "Failed to collect dependencies!" >&2
+        return $status ;
+    }
+
+    dependencies=$(echo $dependencies \
+        | tr -d '\n' \
         | sed 's/ [\]//g;' \
         | sed 's/.*: //g' \
         | xargs -n1 | sort -u | xargs )
@@ -176,8 +188,9 @@ collect_dependencies() {
         done
         if [ "$collected" = "false" ]; then
             list="$list $dep"
-            # echo "Collecting $dep" >&2
             list=$(collect_dependencies ${dep} "$list")
+            local status="$?"
+            [ $status -ne 0 ] && { return $status ; }
         fi
     done
     echo ${list}
@@ -213,6 +226,10 @@ build_executable() {
         local source="$src"
         local deps=""
         deps=$( collect_dependencies ${source} "${deps}")
+
+        local status="$?"
+        [ $status -ne 0 ] && { return $status; }
+
         local sources="${source} $( h2c ${deps} )"
         local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~_$]\+\)@${BUILD_DIR}/\1@g;")
         echo ${objects} | sed "s@ @\n@g" | sort -u - > ${tmp_file}
@@ -238,14 +255,14 @@ build_executable() {
     # is newer source
     if [ ${compiled} -eq 0 ] \
     && [ -e ${BUILD_DIR}/${target} ] \
-    && [ 0 = $( is_newer_source ${BUILD_DIR}/${target} ${deps}; echo $? ) ]
+    && [ 0 = $( is_newer_source ${BUILD_DIR}/${target} ${target_objects}; echo $? ) ]
     then
         echo "Nothing to be done for target '${target}'" >&2
         return 0
     fi
 
     truncate -s 0 ${sum}
-    local obj_sums=$( echo "$objects" \
+    local obj_sums=$( echo "$target_objects" \
         | sed "s@${BUILD_DIR}@${STAMP_DIR}@g" \
         | sed "s@\s\|\$@.sha1 @g" )
     sort -m -u -k2 ${obj_sums} -o ${sum}
