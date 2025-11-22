@@ -67,22 +67,19 @@ bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *con
     spidex_coord_t x_start = area->start.x;
     const size_t x_amount = dynarr_size(spidex->x);
 
-    spidex_range_t *x_range = dynarr_binary_find(spidex->x, &x_start, spidex_cmp, NULL);
-    if (!x_range) // no intersecting x-ranges
+    const ssize_t found_x_index = dynarr_binary_find_index(spidex->x, &x_start, spidex_cmp, NULL);
+    if (-1 == found_x_index) // no intersecting x-ranges
     {
         return false;
     }
+    size_t x_index = found_x_index;
 
-    // TODO: dynarr_index_of
-    size_t x_index = x_range - (spidex_range_t*) vector_data(spidex->x);
-    spidex_range_t *y_range = dynarr_binary_find(spidex->y, &area->start.y, spidex_cmp, NULL);
-
-    if (!y_range) // no intersecting y-ranges
+    const ssize_t found_y_index = dynarr_binary_find_index(spidex->y, &area->start.y, spidex_cmp, NULL);
+    if (-1 == found_y_index) // no intersecting y-ranges
     {
         return false;
     }
-
-    const size_t y_begin_index = y_range - (spidex_range_t*) vector_data(spidex->y);
+    const size_t y_begin_index = found_y_index;
 
     while (x_start < x_end) // X
     {
@@ -169,7 +166,8 @@ static void axis_add(dynarr_t **axis,
                      spidex_coord_t start, const spidex_coord_t end,
                      const spidex_value_t value, const compare_t value_cmp)
 {
-    size_t index = dynarr_binary_find_insert_place(*axis, &start, spidex_cmp, NULL);
+    const ssize_t found_x_index = dynarr_binary_find_index(*axis, &start, spidex_cmp, NULL);
+    size_t index = (-1 == found_x_index) ? 0 : found_x_index;
     ssize_t prev_end = -1ul;
 
     while (start < end)
