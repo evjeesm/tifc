@@ -28,6 +28,13 @@ spidex_range_t;
 
 typedef struct
 {
+    spidex_coord_t start;
+    spidex_coord_t end; /* excluding */
+}
+spidex_interval_t;
+
+typedef struct
+{
     spidex_coord_t x;
     spidex_coord_t y;
 }

@@ -19,6 +19,7 @@
 !core/display
 !core/input
 !core/logger
+!core/spidex
 
 !client
 

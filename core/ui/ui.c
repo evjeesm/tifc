@@ -42,6 +42,31 @@ void ui_init(ui_t *const ui)
     *ui = (ui_t){
         .hooks = hooks_init(),
     };
+
+    hashmap_t *elements = hm_create(
+        .hashfunc = hash_long,
+        .key_size = sizeof(ui_id_t),
+        .value_size = sizeof(ui_element_t*),
+    );
+
+    if (!elements)
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    hashmap_t *containers = hm_create(
+        .hashfunc = hash_long,
+        .key_size = sizeof(ui_id_t),
+        .value_size = sizeof(ui_container_t*),
+    );
+
+    if (!containers)
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    ui->elements = elements;
+    ui->containers = containers;
 }
 
 
@@ -60,6 +85,51 @@ void ui_recalculate(ui_t *const ui, const display_t *const display)
     //     .first = {0, 0},
     //     .second = {display->size.x - 1, display->size.y - 1}
     // };
+}
+
+
+ui_id_t ui_create_element(ui_t *const ui, ui_element_opts_t *const opts)
+{
+    ui_id_t id = ui->new_element_id++; /* reserve id */
+
+    ui_element_t *element = ui_element_alloc(opts);
+    ui_element_init(element, opts);
+
+    (void) hm_insert(&ui->elements, &id, &element);
+
+    return id;
+}
+
+
+ui_id_t ui_create_container(ui_t *const ui, ui_container_opts_t *const opts)
+{
+    ui_id_t id = ui_create_element(ui, (ui_element_opts_t *const) opts);
+    ui_element_t *element = *(ui_element_t**) hm_get(ui->elements, &id);
+    (void) hm_insert(&ui->containers, &id, (ui_container_t*) element);
+
+    return id;
+}
+
+
+ui_status_t ui_assign_to_container(ui_t *const ui, ui_id_t element_id,
+                                   ui_id_t container_id, ui_id_t area_id)
+{
+    ui_element_t *element =  *(ui_element_t**) hm_get(ui->elements, &element_id);
+    if (!element)
+    {
+        return UI_ELEMENT_NOT_FOUND;
+    }
+
+    ui_container_t *container = *(ui_container_t**) hm_get(ui->containers, &container_id);
+    if (!container)
+    {
+        return UI_CONTAINER_NOT_FOUND;
+    }
+
+    /* TODO assign element to container */
+    UNUSED(area_id);
+
+    return UI_SUCCESS;
 }
 
 

@@ -10,6 +10,8 @@
 #define _UNUSED_COUNT(PREFIX, _1, _2, _3, NUM, ...) _CONCAT(PREFIX, NUM)
 #define UNUSED(...) _UNUSED_COUNT(_UNUSED_,__VA_ARGS__, 3, 2, 1)(__VA_ARGS__)
 
+#define DISCARD void
+
 #define TODO(msg) do {\
         fprintf(stderr, "TODO::%s %s\n", __PRETTY_FUNCTION__, msg); \
         exit(-1); \

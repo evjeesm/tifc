@@ -3,29 +3,40 @@
 
 #include <assert.h>
 
-static void axis_add(dynarr_t **axis, const spidex_coord_t start,
-                     const spidex_coord_t end,
-                     const spidex_value_t value,
-                     const compare_t value_cmp);
+static void axis_add(dynarr_t **const axis,
+        const spidex_coord_t start,
+        const spidex_coord_t end,
+        const spidex_value_t value,
+        const compare_t value_cmp);
+
+static bool is_valid_area(const spidex_area_t *const area);
+
+static ssize_t find_first_intersecting_range(dynarr_t *const axis, const spidex_interval_t interval);
+
+static size_t find_insert_place(dynarr_t *const axis, const spidex_coord_t start);
 
 static spidex_range_t new_range(const spidex_coord_t start, const spidex_coord_t end,
-                                const spidex_value_t value);
+        const spidex_value_t value);
 
 static spidex_range_t dup_range(const spidex_range_t *const range);
 
 static bool get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
-                           const compare_t value_cmp, spidex_value_t *const value_out);
+        const compare_t value_cmp, spidex_value_t *const value_out);
 
 static void add_value(spidex_range_t *const range, const spidex_value_t value, const compare_t value_cmp);
 
 static void spidex_range_init(spidex_range_t *const range, spidex_coord_t start,
-                              spidex_coord_t end);
+        spidex_coord_t end);
 
-static ssize_t spidex_cmp(const void *const value, const void *const element,
-                          void *const param);
+static ssize_t spidex_intersect_cmp(const void *const value,
+        const void *const element,
+        void *const param);
+
+static ssize_t spidex_cmp(const void *const value,
+        const void *const element,
+        void *const param);
 
 static int delete_ranges(void *const range, void *const param);
-
 
 void spidex_init(spidex_t *const spidex, const compare_t value_cmp)
 {
@@ -46,10 +57,16 @@ void spidex_deinit(spidex_t *const spidex)
 {
     assert(spidex);
 
-    dynarr_transform(spidex->x, delete_ranges, NULL);
+    if (dynarr_size(spidex->x))
+    {
+        dynarr_transform(spidex->x, delete_ranges, NULL);
+    }
     dynarr_destroy(spidex->x);
 
-    dynarr_transform(spidex->y, delete_ranges, NULL);
+    if (dynarr_size(spidex->y))
+    {
+        dynarr_transform(spidex->y, delete_ranges, NULL);
+    }
     dynarr_destroy(spidex->y);
 }
 
@@ -63,18 +80,21 @@ bool spidex_is_empty(const spidex_t *const spidex)
 
 bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *const area)
 {
+    assert(spidex);
+    assert(is_valid_area(area));
+
     const spidex_coord_t x_end = area->end.x;
     spidex_coord_t x_start = area->start.x;
     const size_t x_amount = dynarr_size(spidex->x);
 
-    const ssize_t found_x_index = dynarr_binary_find_index(spidex->x, &x_start, spidex_cmp, NULL);
+    const ssize_t found_x_index = find_first_intersecting_range(spidex->x, (spidex_interval_t){ area->start.x, area->end.x });
     if (-1 == found_x_index) // no intersecting x-ranges
     {
         return false;
     }
     size_t x_index = found_x_index;
 
-    const ssize_t found_y_index = dynarr_binary_find_index(spidex->y, &area->start.y, spidex_cmp, NULL);
+    const ssize_t found_y_index = find_first_intersecting_range(spidex->y, (spidex_interval_t){ area->start.y, area->end.y });
     if (-1 == found_y_index) // no intersecting y-ranges
     {
         return false;
@@ -115,11 +135,12 @@ bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *con
 
 
 spidex_status_t spidex_add(spidex_t *const spidex,
-                           const spidex_area_t *const area,
-                           spidex_value_t value)
+       const spidex_area_t *const area,
+       spidex_value_t value)
 {
     assert(spidex);
     assert(spidex->value_cmp);
+    assert(is_valid_area(area));
 
     if (spidex_has_intersect(spidex, area))
     {
@@ -163,12 +184,30 @@ void spidex_reset(spidex_t *const spidex)
 
 
 static void axis_add(dynarr_t **axis,
-                     spidex_coord_t start, const spidex_coord_t end,
-                     const spidex_value_t value, const compare_t value_cmp)
+       spidex_coord_t start, const spidex_coord_t end,
+       const spidex_value_t value, const compare_t value_cmp)
 {
-    const ssize_t found_x_index = dynarr_binary_find_index(*axis, &start, spidex_cmp, NULL);
-    size_t index = (-1 == found_x_index) ? 0 : found_x_index;
-    ssize_t prev_end = -1ul;
+    const ssize_t found_index = find_first_intersecting_range(*axis, (spidex_interval_t){start, end});
+    size_t index;
+    ssize_t prev_end; // needed for detecting gaps
+
+    if (-1 == found_index) // no intersection detected
+    {
+        index = find_insert_place(*axis, start);
+    }
+    else
+    {
+        index = found_index;
+        spidex_range_t *found_range = dynarr_get(*axis, index);
+        if (start < found_range->start && end > found_range->start) // right intersection
+        {
+            prev_end = start; // there is a gap to fill at the begining
+        }
+        else // left intersection or aligned
+        {
+            prev_end = found_range->start; // no gap to fill
+        }
+    }
 
     while (start < end)
     {
@@ -176,51 +215,51 @@ static void axis_add(dynarr_t **axis,
         {
             // alloc rest
             spidex_range_t rest = new_range(start, end, value);
-            (void) dynarr_insert(axis, index, &rest);
+            (DISCARD) dynarr_insert(axis, index, &rest);
             start = rest.end;
-            index += 1;
-            continue;
+            ++index;
+            continue; // should exit a loop
         }
 
         spidex_range_t *cur_range = dynarr_get(*axis, index);
-        if (cur_range->start > prev_end)
+        if (prev_end < cur_range->start)
         {
             // fill the gap
             spidex_coord_t gap_end = (end < cur_range->start) ? end : cur_range->start;
             spidex_range_t gap = new_range(prev_end, gap_end, value);
 
-            (void) dynarr_insert(axis, index, &gap);
+            (DISCARD) dynarr_insert(axis, index, &gap);
             start = gap.end;
-            index += 1;
+            prev_end = gap.end;
+            ++index;
             continue;
         }
 
-        if (cur_range->start < start)
+        if (start > cur_range->start)
         {
             // split by start
-            spidex_range_t split = dup_range(cur_range);
-            add_value(&split, value, value_cmp);
-            cur_range->end = start;
-            split.start = start;
-            (void) dynarr_insert(axis, index + 1, &split);
-
-            index += 1;
+            spidex_range_t left_part = dup_range(cur_range); // left unmodified
+            left_part.end = start;
+            cur_range->start = start; // cur_range is right_part
+            (DISCARD) dynarr_insert(axis, index, &left_part);
+            ++index; // skip left_part
+            prev_end = left_part.end;
         }
-        else // cur_range->start == start
+        else // start == cur_range->start
         {
-            if (cur_range->end > end)
+            if (end < cur_range->end)
             {
                 // split by end
-                spidex_range_t split = dup_range(cur_range);
-                add_value(cur_range, value, value_cmp);
-                cur_range->end = end;
-                split.start = end;
-                (void) dynarr_insert(axis, index + 1, &split);
-                index += 1;
+                spidex_range_t right_part = dup_range(cur_range); // left unmodified
+                add_value(cur_range, value, value_cmp); // modify cur_range
+                cur_range->end = end; // trim
+                right_part.start = end;
+                (DISCARD) dynarr_insert(axis, index + 1, &right_part);
             }
-            else // cur_range->end <= end
+            else // end >= cur_range->end
             {
                 add_value(cur_range, value, value_cmp);
+                ++index;
             }
             prev_end = cur_range->end;
             start = cur_range->end;
@@ -229,13 +268,33 @@ static void axis_add(dynarr_t **axis,
 }
 
 
+static bool is_valid_area(const spidex_area_t *const area)
+{
+    return area->start.x < area->end.x && area->start.y < area->end.y;
+}
+
+
+static ssize_t find_first_intersecting_range(dynarr_t *const axis, const spidex_interval_t interval)
+{
+    return dynarr_binary_find_index(axis, &interval, spidex_intersect_cmp, NULL);
+}
+
+// use it when you definitely know that there is no intersection
+static size_t find_insert_place(dynarr_t *const axis, const spidex_coord_t start)
+{
+    return dynarr_binary_find_insert_place(axis, &start, spidex_cmp, NULL);
+}
+
+
 static spidex_range_t new_range(const spidex_coord_t start, const spidex_coord_t end,
                                 const spidex_value_t value)
 {
+    assert(start < end);
+
     spidex_range_t range;
     spidex_range_init(&range, start, end);
 
-    (void) dynarr_append(&range.values, &value);
+    (DISCARD) dynarr_append(&range.values, &value);
     return range;
 }
 
@@ -290,9 +349,9 @@ static void add_value(spidex_range_t *const range, const spidex_value_t value, c
 {
     assert(range);
     assert(!dynarr_binary_find(range->values, &value, value_cmp, NULL)
-        && "Should not add same value twise!");
+        && "Should not add same value twice!");
 
-    (void) dynarr_binary_insert(&range->values, &value, value_cmp, NULL, NULL);
+    (DISCARD) dynarr_binary_insert(&range->values, &value, value_cmp, NULL, NULL);
 }
 
 
@@ -317,12 +376,12 @@ static ssize_t spidex_cmp(const void *const value, const void *const element,
     const spidex_range_t *range = element;
     UNUSED(param);
 
-    if ((*coord - range->start) < 0)
+    if (*coord < range->start)
     {
         return -1;
     }
 
-    if ((*coord - range->end) > 0)
+    if (*coord >= range->end)
     {
         return  1;
     }
@@ -330,6 +389,35 @@ static ssize_t spidex_cmp(const void *const value, const void *const element,
     return 0;
 }
 
+static ssize_t spidex_intersect_cmp(const void *const value,
+        const void *const element,
+        void *const param)
+{
+    const spidex_interval_t *interval = value;
+    const spidex_range_t *range = element;
+    UNUSED(param);
+
+    if (interval->start < range->start) // interval shifted left from range start
+    {
+        if (interval->end > range->start) // interval intersects range from the left
+        {
+            return 0;
+        }
+
+        return -1;  // no intersection
+    }
+    else if (interval->start > range->start)   // interval shifted right from range start
+    {
+        if (interval->start < range->end) // interval intersects range from the right
+        {
+            return 0;
+        }
+
+        return 1; // no intersection
+    }
+
+    return 0; // interval aligned with range start (intersect)
+}
 
 static int delete_ranges(void *const range, void *const param)
 {

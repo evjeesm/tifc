@@ -15,6 +15,7 @@ SUBDIRS=$(list "
     core/input
     core/logger
     core/ui
+    core/spidex
 
     client
 ")
@@ -323,6 +324,10 @@ main() {
                     for _test_ in ${tests}; do
                         { build_executable ${_test_} ;}
                     done
+                ;;
+                test_spidex)
+                    { build_executable 'core/spidex/spidex_test.c' ;}
+                    [ $? != 0 ] && exit $?
                 ;;
                 *) echo "ERROR : Wrong compile target '$2'" >&2
                 ;;
