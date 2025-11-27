@@ -134,7 +134,7 @@ static bool test_has_intersect_single_area(spidex_t *const spidex)
     TEST_SUCCESS();
 }
 
-bool test_has_intersect_many_areas(spidex_t *const spidex)
+bool test_has_intersect_cutout_middle(spidex_t *const spidex)
 {
     spidex_area_t middle = { .start = {2, 2}, .end = {8, 8} };
 
@@ -144,11 +144,24 @@ bool test_has_intersect_many_areas(spidex_t *const spidex)
     TEST_SUCCESS();
 }
 
+bool test_add(spidex_t *const spidex)
+{
+    spidex_area_t area = {{0,0}, {1,1}};
+    spidex_value_t value = NULL;
+    spidex_status_t status = spidex_add(spidex, &area, value);
+
+    TEST_ASSERT((SPIDEX_OK == status),
+        RED("Trivial add into an empty spidex should not fail"));
+
+    TEST_SUCCESS();
+}
+
 int main(void)
 {
     RUN_TEST(setup, test_empty, cleanup);
+    RUN_TEST(setup, test_add, cleanup);
     RUN_TEST(setup, test_has_intersect_single_area, cleanup);
-    RUN_TEST(setup_quad_frame, test_has_intersect_many_areas, cleanup);
+    RUN_TEST(setup_quad_frame, test_has_intersect_cutout_middle, cleanup);
 
     return 0;
 }

@@ -61,16 +61,32 @@ void spidex_deinit(spidex_t *const spidex);
 bool spidex_is_empty(const spidex_t *const spidex);
 bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *const area);
 
-/* O(LogN + M) */
+/* O(LogN + M)
+ * N - amount of registered areas
+ * M - amount of areas that intersect with new area on one of the axis
+ *
+ * Do not protects from registering same value several times.
+ * Do prevents overlaps (in that case returns SPIDEX_OVERLAP status).
+ * Returns SPIDEX_OK on success
+ */
 spidex_status_t spidex_add(spidex_t *const spidex, const spidex_area_t *const area, spidex_value_t value);
 
-/* O(M + N) */
+/* O(X + Y)
+ *  X - amount of registered ranges at x-axis
+ *  Y - amount of registered ranges at y-axis
+ */
 void spidex_remove(spidex_t *const spidex, spidex_value_t value);
+/* TODO: spidex_guided_remove */
 
-/* O(LogN + M) */
+/* TODO: spidex_find */
+
+/* O(LogN + M)
+ */
 spidex_value_t spidex_query(const spidex_t *const spidex, spidex_pos_t pos);
 
-/* O(1) */
+
+/* O(1)
+ */
 void spidex_reset(spidex_t *const spidex);
 
 
