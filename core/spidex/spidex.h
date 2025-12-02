@@ -51,6 +51,7 @@ typedef enum
 {
     SPIDEX_OK = 0,
     SPIDEX_OVERLAP = 1,
+    SPIDEX_NO_VALUE = 2,
 }
 spidex_status_t;
 
@@ -65,7 +66,7 @@ bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *con
  * N - amount of registered areas
  * M - amount of areas that intersect with new area on one of the axis
  *
- * Do not protects from registering same value several times.
+ * Does not protect from registering same value several times.
  * Do prevents overlaps (in that case returns SPIDEX_OVERLAP status).
  * Returns SPIDEX_OK on success
  */
@@ -75,14 +76,14 @@ spidex_status_t spidex_add(spidex_t *const spidex, const spidex_area_t *const ar
  *  X - amount of registered ranges at x-axis
  *  Y - amount of registered ranges at y-axis
  */
-void spidex_remove(spidex_t *const spidex, spidex_value_t value);
+void spidex_remove(spidex_t *const spidex, const spidex_value_t value);
 /* TODO: spidex_guided_remove */
 
 /* TODO: spidex_find */
 
 /* O(LogN + M)
  */
-spidex_value_t spidex_query(const spidex_t *const spidex, spidex_pos_t pos);
+spidex_status_t spidex_query(const spidex_t *const spidex, spidex_pos_t pos, spidex_value_t *const out_value);
 
 
 /* O(1)

@@ -23,6 +23,7 @@ typedef void (*cleanup_func_t) (spidex_t *const spidex);
 static bool run_test(const char *const test_name, setup_func_t setup_func, test_func_t test_func, cleanup_func_t cleanup_func);
 static void setup(spidex_t *spidex);
 static void setup_quad_frame(spidex_t *spidex);
+static void setup_for_query(spidex_t *spidex);
 static void cleanup(spidex_t *spidex);
 
 static ssize_t value_cmp(const void *const value, const void *const element, void *const param)
@@ -156,12 +157,48 @@ bool test_add(spidex_t *const spidex)
     TEST_SUCCESS();
 }
 
+#define ARR_LEN(array) (sizeof(array)/sizeof(*array))
+
+bool test_query(spidex_t *const spidex)
+{
+    spidex_pos_t p[] = {{ 4, 1 },   // f
+                        { 6, 2 },   // a
+                        { 7, 4 },   // c
+                        { 6, 3 },}; // none
+
+    const spidex_status_t exp_status[ARR_LEN(p)] = {
+        SPIDEX_OK,
+        SPIDEX_OK,
+        SPIDEX_OK,
+        SPIDEX_NO_VALUE
+    };
+
+    const spidex_value_t exp_values[ARR_LEN(p)] = {
+        (spidex_value_t) 0xf,
+        (spidex_value_t) 0xa,
+        (spidex_value_t) 0xc,
+        (spidex_value_t) 0x0, // don't care
+    };
+
+    for (size_t i = 0; i < ARR_LEN(p); ++i)
+    {
+        spidex_value_t value;
+        spidex_status_t status = spidex_query(spidex, p[i], &value);
+        TEST_ASSERT((exp_status[i] == status), "Unexpected status");
+        TEST_ASSERT((exp_values[i] == value), "Unexpected value");
+    }
+
+    TEST_SUCCESS();
+}
+
+
 int main(void)
 {
     RUN_TEST(setup, test_empty, cleanup);
     RUN_TEST(setup, test_add, cleanup);
     RUN_TEST(setup, test_has_intersect_single_area, cleanup);
     RUN_TEST(setup_quad_frame, test_has_intersect_cutout_middle, cleanup);
+    RUN_TEST(setup_for_query, test_query, cleanup);
 
     return 0;
 }
@@ -196,6 +233,31 @@ static void setup_quad_frame(spidex_t *spidex)
 
     spidex_area_t left = {.start = {0, 2}, .end = {2, 10}};
     spidex_add(spidex, &left, value++);
+}
+
+static void setup_for_query(spidex_t *spidex)
+{
+    setup(spidex);
+    //...........
+    //....ffbbe..
+    //....aaaae..
+    //.......cc..
+    //.......cc..
+    //...........
+    spidex_area_t area_f = {.start = {4, 1}, .end = {6, 2}};
+    spidex_add(spidex, &area_f, (spidex_value_t) 0xf);
+
+    spidex_area_t area_b = {.start = {6, 1}, .end = {8, 2}};
+    spidex_add(spidex, &area_b, (spidex_value_t) 0xb);
+
+    spidex_area_t area_e = {.start = {8, 1}, .end = {9, 3}};
+    spidex_add(spidex, &area_e, (spidex_value_t) 0xe);
+
+    spidex_area_t area_a = {.start = {4, 2}, .end = {8, 3}};
+    spidex_add(spidex, &area_a, (spidex_value_t) 0xa);
+
+    spidex_area_t area_c = {.start = {7, 3}, .end = {9, 5}};
+    spidex_add(spidex, &area_c, (spidex_value_t) 0xc);
 }
 
 static void cleanup(spidex_t *spidex)

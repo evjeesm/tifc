@@ -15,13 +15,15 @@ static ssize_t find_first_intersecting_range(dynarr_t *const axis, const spidex_
 
 static size_t find_insert_place(dynarr_t *const axis, const spidex_coord_t start);
 
+static spidex_range_t *query_range(const dynarr_t *const axis, const spidex_coord_t coord);
+
 static spidex_range_t new_range(const spidex_coord_t start, const spidex_coord_t end,
         const spidex_value_t value);
 
 static spidex_range_t dup_range(const spidex_range_t *const range);
 
-static bool get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
-        const compare_t value_cmp, spidex_value_t *const value_out);
+static spidex_status_t get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
+        const compare_t value_cmp, spidex_value_t *const out_value);
 
 static void add_value(spidex_range_t *const range, const spidex_value_t value, const compare_t value_cmp);
 
@@ -119,8 +121,10 @@ bool spidex_has_intersect(const spidex_t *const spidex, const spidex_area_t *con
             spidex_range_t *y_range = dynarr_get(spidex->y, y_index);
             spidex_value_t area_value;
 
-            bool has_area_value = get_area_value(x_range, y_range, spidex->value_cmp, &area_value);
-            if (has_area_value) return true;
+            if (SPIDEX_OK == get_area_value(x_range, y_range, spidex->value_cmp, &area_value))
+            {
+                return true;
+            }
 
             y_start = y_range->end;
             ++y_index;
@@ -157,18 +161,31 @@ spidex_status_t spidex_add(spidex_t *const spidex,
 }
 
 
-void spidex_remove(spidex_t *const spidex, spidex_value_t value)
+void spidex_remove(spidex_t *const spidex, const spidex_value_t value)
 {
     assert(spidex);
     UNUSED(value);
 }
 
 
-spidex_value_t spidex_query(const spidex_t *const spidex, spidex_pos_t pos)
+spidex_status_t spidex_query(const spidex_t *const spidex, spidex_pos_t pos, spidex_value_t *const out_value)
 {
     assert(spidex);
-    UNUSED(pos);
-    return 0;
+    assert(out_value);
+
+    spidex_range_t *x_range = query_range(spidex->x, pos.x);
+    if (!x_range)
+    {
+        return SPIDEX_NO_VALUE;
+    }
+
+    spidex_range_t *y_range = query_range(spidex->y, pos.y);
+    if (!y_range)
+    {
+        return SPIDEX_NO_VALUE;
+    }
+
+    return get_area_value(x_range, y_range, spidex->value_cmp, out_value);
 }
 
 
@@ -279,10 +296,17 @@ static ssize_t find_first_intersecting_range(dynarr_t *const axis, const spidex_
     return dynarr_binary_find_index(axis, &interval, spidex_intersect_cmp, NULL);
 }
 
+
 // use it when you definitely know that there is no intersection
 static size_t find_insert_place(dynarr_t *const axis, const spidex_coord_t start)
 {
     return dynarr_binary_find_insert_place(axis, &start, spidex_cmp, NULL);
+}
+
+
+static spidex_range_t *query_range(const dynarr_t *const axis, const spidex_coord_t coord)
+{
+    return dynarr_binary_find(axis, &coord, spidex_cmp, NULL);
 }
 
 
@@ -312,8 +336,8 @@ static spidex_range_t dup_range(const spidex_range_t *const range)
 }
 
 
-static bool get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
-                           const compare_t value_cmp, spidex_value_t *const value_out)
+static spidex_status_t get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
+                           const compare_t value_cmp, spidex_value_t *const out_value)
 {
     const size_t x_size = dynarr_size(x->values);
     const size_t y_size = dynarr_size(y->values);
@@ -336,12 +360,12 @@ static bool get_area_value(const spidex_range_t *const x, const spidex_range_t *
         }
         else
         {
-            *value_out = *x_value;
-            return true;
+            *out_value = *x_value;
+            return SPIDEX_OK;
         }
     }
 
-    return false;
+    return SPIDEX_NO_VALUE;
 }
 
 
