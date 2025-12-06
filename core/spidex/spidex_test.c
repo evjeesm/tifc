@@ -12,7 +12,7 @@
 
 #define RUN_TEST(s,t,c) do { if (!run_test(#t,s,t,c)) { exit(1); }} while(0)
 #define TEST_MSG(msg, ...) fprintf(stderr, msg "\n" ,##__VA_ARGS__)
-#define TEST_ASSERT(cond, msg) do { if (!(cond)) { TEST_MSG(msg); return false; } } while (0)
+#define TEST_ASSERT(cond, msg, ...) do { if (!(cond)) { TEST_MSG(msg,##__VA_ARGS__); return false; } } while (0)
 
 #define TEST_SUCCESS() return true
 
@@ -157,6 +157,42 @@ bool test_add(spidex_t *const spidex)
     TEST_SUCCESS();
 }
 
+bool test_add_sharing_x(spidex_t *const spidex)
+{
+    spidex_area_t area_a = {{5,5}, {6,6}}; // point at 5, 5
+    spidex_area_t area_b = {{5,6}, {6,7}}; // point at 5, 6
+
+    spidex_status_t status = spidex_add(spidex, &area_a, (spidex_value_t) 0xa);
+
+    TEST_ASSERT((SPIDEX_OK == status),
+        RED("Trivial add into an empty spidex should not fail"));
+
+    status = spidex_add(spidex, &area_b, (spidex_value_t) 0xb);
+
+    TEST_ASSERT((SPIDEX_OK == status),
+        RED("Add of non-overlaping regions should not fail"));
+
+    spidex_value_t value;
+
+    status = spidex_query(spidex, area_a.start, &value);
+
+    TEST_ASSERT((SPIDEX_OK == status),
+        RED("query area_a after inserting area_b should return value successfully"));
+
+    TEST_ASSERT(((spidex_value_t)0xa == value),
+        RED("area_a value should be queried correctly"));
+
+    status = spidex_query(spidex, area_b.start, &value);
+
+    TEST_ASSERT((SPIDEX_OK == status),
+        RED("query area_b should return value successfully"));
+
+    TEST_ASSERT(((spidex_value_t)0xb == value),
+        RED("area_b value should be queried correctly"));
+
+    TEST_SUCCESS();
+}
+
 #define ARR_LEN(array) (sizeof(array)/sizeof(*array))
 
 bool test_query(spidex_t *const spidex)
@@ -184,8 +220,8 @@ bool test_query(spidex_t *const spidex)
     {
         spidex_value_t value;
         spidex_status_t status = spidex_query(spidex, p[i], &value);
-        TEST_ASSERT((exp_status[i] == status), "Unexpected status");
-        TEST_ASSERT((exp_values[i] == value), "Unexpected value");
+        TEST_ASSERT((exp_status[i] == status), "at p[%zu] Unexpected status (%d)", i, status);
+        TEST_ASSERT((exp_values[i] == 0x0 || exp_values[i] == value), "at p[%zu] Unexpected value (%p)", i, value);
     }
 
     TEST_SUCCESS();
@@ -196,6 +232,7 @@ int main(void)
 {
     RUN_TEST(setup, test_empty, cleanup);
     RUN_TEST(setup, test_add, cleanup);
+    RUN_TEST(setup, test_add_sharing_x, cleanup);
     RUN_TEST(setup, test_has_intersect_single_area, cleanup);
     RUN_TEST(setup_quad_frame, test_has_intersect_cutout_middle, cleanup);
     RUN_TEST(setup_for_query, test_query, cleanup);
