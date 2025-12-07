@@ -227,6 +227,37 @@ bool test_query(spidex_t *const spidex)
     TEST_SUCCESS();
 }
 
+bool test_remove(spidex_t *const spidex)
+{
+    spidex_pos_t p[] = {{ 4, 1 },  // f
+                        { 6, 2 },  // a
+                        { 7, 4 }}; // c
+
+    const spidex_value_t exp_values[ARR_LEN(p)] = {
+        (spidex_value_t) 0xf,
+        (spidex_value_t) 0xa,
+        (spidex_value_t) 0xc
+    };
+
+    // remove loop
+    for (size_t i = 0; i < ARR_LEN(p); ++i)
+    {
+        // before remvoe
+        spidex_value_t value;
+        spidex_status_t status = spidex_query(spidex, p[i], &value);
+        TEST_ASSERT((exp_values[i] == value), "BEFORE REMOVE at p[%zu] Unexpected value (%p)", i, value);
+        TEST_ASSERT((SPIDEX_OK == status), "BEFORE REMOVE at p[%zu] Unexpected status (%d)", i, status);
+
+        spidex_remove(spidex, exp_values[i]);
+
+        status = spidex_query(spidex, p[i], &value);
+        TEST_ASSERT((exp_values[i] == value), "AFTER REMOVE at p[%zu] Unexpected value (%p)", i, value);
+        TEST_ASSERT((SPIDEX_NO_VALUE == status), "AFTER REMOVE at p[%zu] Unexpected status (%d)", i, status);
+    }
+
+    TEST_SUCCESS();
+}
+
 
 int main(void)
 {
@@ -236,6 +267,7 @@ int main(void)
     RUN_TEST(setup, test_has_intersect_single_area, cleanup);
     RUN_TEST(setup_quad_frame, test_has_intersect_cutout_middle, cleanup);
     RUN_TEST(setup_for_query, test_query, cleanup);
+    RUN_TEST(setup_for_query, test_remove, cleanup);
 
     return 0;
 }

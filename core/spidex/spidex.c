@@ -9,6 +9,19 @@ static void axis_add_value(dynarr_t **const axis,
         const spidex_value_t value,
         const compare_t value_cmp);
 
+static void axis_remove_value(dynarr_t **const axis,
+        const spidex_value_t value,
+        const compare_t value_cmp);
+
+static void axis_delete_range_at(dynarr_t **const axis, const size_t index);
+
+static ssize_t axis_find_value(const dynarr_t *const axis,
+        const spidex_value_t value,
+        const compare_t value_cmp);
+
+static bool ranges_has_equal_value_sets(const spidex_range_t *const range,
+        const spidex_range_t *const other, const compare_t value_cmp);
+
 static bool is_valid_area(const spidex_area_t *const area);
 
 static ssize_t find_first_overlapping_range(dynarr_t *const axis, const spidex_interval_t interval);
@@ -165,7 +178,12 @@ spidex_status_t spidex_add(spidex_t *const spidex,
 void spidex_remove(spidex_t *const spidex, const spidex_value_t value)
 {
     assert(spidex);
-    UNUSED(value);
+
+    // x
+    axis_remove_value(&spidex->x, value, spidex->value_cmp);
+
+    // y
+    axis_remove_value(&spidex->y, value, spidex->value_cmp);
 }
 
 
@@ -286,6 +304,84 @@ static void axis_add_value(dynarr_t **axis,
 }
 
 
+static void axis_remove_value(dynarr_t **const axis,
+        const spidex_value_t value,
+        const compare_t value_cmp)
+{
+    size_t amount = dynarr_size(*axis);
+
+    // find first range with 'value'
+    ssize_t index = axis_find_value(*axis, value, value_cmp);
+    if (-1 == index)
+    {
+        return;
+    }
+
+    // iterate forward from that index until range at that index contains 'value'
+    while ((size_t)index < amount)
+    {
+        spidex_range_t *range = dynarr_get(*axis, index);
+        ssize_t value_index = dynarr_binary_find_index(range->values, &value, value_cmp, NULL);
+        if (-1 == value_index) // all values removed, stop iterating
+        {
+            break;
+        }
+
+        // remove value from range
+        (DISCARD) dynarr_remove(&range->values, value_index);
+
+        // if range has no values, remove it completely
+        if (0 == dynarr_size(range->values))
+        {
+            axis_delete_range_at(axis, index);
+            --amount;
+            continue;
+        }
+        else if (index > 0) // still has values and previous range is present
+        {
+            spidex_range_t *prev_range = dynarr_get(*axis, index - 1);
+            if ((prev_range->end == range->start)  // adjacent
+                && ranges_has_equal_value_sets(range, prev_range, value_cmp))
+            {
+                // merge
+                prev_range->end = range->end;
+
+                axis_delete_range_at(axis, index);
+                --amount;
+                continue;
+            }
+        }
+
+        ++index;
+    }
+}
+
+
+static ssize_t axis_find_value(const dynarr_t *const axis,
+        const spidex_value_t value,
+        const compare_t value_cmp)
+{
+    const size_t amount = dynarr_size(axis);
+    for (size_t i = 0; i < amount; ++i)
+    {
+        spidex_range_t *range = dynarr_get(axis, i);
+        if (dynarr_binary_find(range->values, &value, value_cmp, NULL))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+static void axis_delete_range_at(dynarr_t **const axis, const size_t index)
+{
+    // delete current range
+    (DISCARD) delete_ranges(dynarr_get(*axis, index), NULL);
+    (DISCARD) dynarr_remove(axis, index);
+}
+
+
 static bool is_valid_area(const spidex_area_t *const area)
 {
     return area->start.x < area->end.x && area->start.y < area->end.y;
@@ -350,8 +446,33 @@ static spidex_range_t dup_range(const spidex_range_t *const range)
 }
 
 
-static spidex_status_t get_area_value(const spidex_range_t *const x, const spidex_range_t *const y,
-                           const compare_t value_cmp, spidex_value_t *const out_value)
+static bool ranges_has_equal_value_sets(const spidex_range_t *const range,
+        const spidex_range_t *const other,
+        const compare_t value_cmp)
+{
+    if (dynarr_size(range->values) != dynarr_size(other->values))
+    {
+        return false;
+    }
+
+    const size_t amount = dynarr_size(range->values);
+
+    for (size_t i = 0; i < amount; ++i)
+    {
+        if (!dynarr_binary_find(range->values, dynarr_get(other->values, i), value_cmp, NULL))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+static spidex_status_t get_area_value(const spidex_range_t *const x,
+      const spidex_range_t *const y,
+      const compare_t value_cmp,
+      spidex_value_t *const out_value)
 {
     const size_t x_size = dynarr_size(x->values);
     const size_t y_size = dynarr_size(y->values);
