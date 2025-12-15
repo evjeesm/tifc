@@ -73,16 +73,10 @@ void spidex_deinit(spidex_t *const spidex)
 {
     assert(spidex);
 
-    if (dynarr_size(spidex->x))
-    {
-        dynarr_transform(spidex->x, delete_ranges, NULL);
-    }
+    dynarr_transform(spidex->x, delete_ranges, NULL);
     dynarr_destroy(spidex->x);
 
-    if (dynarr_size(spidex->y))
-    {
-        dynarr_transform(spidex->y, delete_ranges, NULL);
-    }
+    dynarr_transform(spidex->y, delete_ranges, NULL);
     dynarr_destroy(spidex->y);
 }
 
