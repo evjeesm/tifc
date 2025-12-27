@@ -16,7 +16,7 @@ HELP='List of sub-commands:\n
 [ $# -ge 1 ] && {
     case $1 in
         update)
-            git submodule update --init --recursive --remote
+            git submodule update --init --recursive && git submodule update --init --remote
             [ $? -ne 0 ] && exit $? || exit 0
         ;;
         remove-all)
