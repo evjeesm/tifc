@@ -20,6 +20,7 @@
 !core/input
 !core/logger
 !core/spidex
+!core/events
 
 !client
 
