@@ -16,6 +16,7 @@ SUBDIRS=$(list "
     core/logger
     core/ui
     core/spidex
+    core/events
 
     client
 ")
@@ -327,6 +328,10 @@ main() {
                 ;;
                 test_spidex)
                     { build_executable 'core/spidex/spidex_test.c' ;}
+                    [ $? != 0 ] && exit $?
+                ;;
+                test_es)
+                    { build_executable 'core/events/event_system_test.c' ;}
                     [ $? != 0 ] && exit $?
                 ;;
                 *) echo "ERROR : Wrong compile target '$2'" >&2
