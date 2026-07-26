@@ -12,4 +12,7 @@
 	url = https://github.com/evjeesm/circbuf
 [submodule "deps/arena"]
 	path = deps/arena
-	url = https://github.com/evjeesm/arena.git
+	url = https://github.com/evjeesm/arena
+[submodule "deps/pq"]
+	path = deps/pq
+	url = git@github.com:evjeesm/pq.git

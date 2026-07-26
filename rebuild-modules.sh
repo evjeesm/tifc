@@ -1,4 +1,5 @@
 #!/bin/sh
+# set -x
 
 THREADS=8
 CFLAGS="-g -O0 -Wall -Wextra -Werror -Wno-override-init -Wno-unused-function"
@@ -26,12 +27,12 @@ HELP='List of sub-commands:\n
         ;;
         fresh)
             echo Fresh ...
-            git submodule foreach "make -j$THREADS distclean; ./autogen.sh && ./configure"
+            git submodule foreach "[ -e ./autogen.sh ] && (make -j$THREADS distclean; ./autogen.sh && ./configure;) || echo 'skip autogen'"
             [ $? -ne 0 ] && exit $? || exit 0
         ;;
         config)
             echo Configuring ...
-            git submodule foreach "./configure CFLAGS=\"$CFLAGS\" && make -j$THREADS clean"
+            git submodule foreach "[ -e ./configure ] && (./configure CFLAGS=\"$CFLAGS\" && make -j$THREADS clean) || echo 'skip configure'"
             [ $? -ne 0 ] && exit $? || exit 0
         ;;
         remake)
